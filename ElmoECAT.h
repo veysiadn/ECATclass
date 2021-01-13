@@ -185,7 +185,7 @@ public:
     uint32_t cycleTime;
     uint32_t sync0_shift;
 
-    ec_pdo_entry_reg_t masterDomain_PdoRegs[20] = {
+    ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 
         {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &offset.actual_pos},
         {alias_, position_, vendorId_,productCode_, od_positonFollowingError ,    &offset.posFollowingError},
@@ -209,6 +209,7 @@ public:
         {alias_, position_, vendorId_,productCode_,od_profileAcceleration ,      &offset.profileAcc},
         {alias_, position_, vendorId_,productCode_,od_profileDeceleration ,      &offset.profileDec},
         {alias_, position_, vendorId_,productCode_,od_quickStopDeceleration ,    &offset.quicStopDec},
+        {}
     };
     /*******************************************************************************/
     ec_pdo_entry_info_t GS_PDO_Entries[22] = {
