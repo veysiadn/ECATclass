@@ -40,7 +40,12 @@ void ElmoECAT::ConfigureSlave(uint16_t pos)
     }
 }
 
-int ElmoECAT::MapPDOs(const ec_sync_info_t *syncs, const ec_pdo_entry_reg_t *pdo_entry_reg)
+void ElmoECAT::SetProfilePositionPdoRegs(uint16_t  pos)
+{
+
+}
+
+int ElmoECAT::MapPDOs(ec_sync_info_t *syncs, ec_pdo_entry_reg_t *pdo_entry_reg)
 {
     int err = ecrt_slave_config_pdos(slaveConfig,EC_END,syncs);
     if ( err ) {

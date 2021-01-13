@@ -8,13 +8,14 @@ int main()
     e_motor.cycleTime    = PERIODNS;
     e_motor.sync0_shift  = 0;
     std::cout << "Initialization started.." << std::endl;
-   /* if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
+    
+   if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
     //mlockall locks part of all the calling process's \ virtual address space into RAM, \
      preventing that memory being paged to swap area.To prevent realtime performance drops.
         std::cout << "mlockall failed" << std::endl;
         return -1;
-    }*/
-    
+    }
+
     e_motor.ConfigureMaster();
     std::cout << "Initialization  2 started.." << std::endl;
     e_motor.position_      = 0 ;
@@ -23,13 +24,17 @@ int main()
     //e_motor.MapPDOs();
     e_motor.ConfigDCSync();
     std::cout << "Initialization 4 started.." << std::endl;
-    ProfilePosParam PositionParameters;
+    ProfilePosParam PositionParameters; 
+    sdoRequest_t e_sdo;
+    e_motor.ConfigSDORequests(e_sdo);
+    e_motor.GetProfilePositionParameters(P,e_sdo);
     PositionParameters.maxProfileVelocity    = 1e5 ;
     PositionParameters.profileAcceleration   = 1e6 ;
     PositionParameters.profileDeceleration   = 1e6 ;
     PositionParameters.profileVelocity       = 8e4 ;
     PositionParameters.quickStopDeceleration = 1e6 ;
     PositionParameters.maxFollowingError     = 1e6 ; 
+    e_motor.SetOperationMode(MODE_PROFILE_POSITION);
     e_motor.SetProfilePositionParameters(PositionParameters);
     std::cout << "Initialization 5 started.." << std::endl; 
     e_motor.ActivateMaster();

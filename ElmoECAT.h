@@ -96,6 +96,7 @@ typedef struct
     unsigned int mode_display ;
 } offset_t ;
 
+
 // VeysiAdn received data
 typedef struct
 {
@@ -176,6 +177,15 @@ public:
     data_t              data;
     uint32_t cycleTime;
     uint32_t sync0_shift;
+
+    const static ec_pdo_entry_reg_t profilePosition_PdoRegs[] = {
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_,od_velocityActvalue,  offset.actual_vel},
+        {alias_, position_, vendorId_,productCode_,od_currentActualValue, offset.actual_cur},
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos}
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
+    }
     /*******************************************************************************/
     //RxPdo
     /*static ec_pdo_entry_info_t motor_rxpdo_entries[8] =
@@ -228,7 +238,8 @@ public:
 
     void ConfigureMaster();
     void ConfigureSlave(uint16_t pos);
-    int MapPDOs(const ec_sync_info_t *syncs, const ec_pdo_entry_reg_t *pdo_entry_reg);
+    void SetProfilePositionPdoRegs(uint16_t  pos);
+    int MapPDOs(ec_sync_info_t *syncs, ec_pdo_entry_reg_t *pdo_entry_reg);
     void ConfigDCSync();
     int ConfigSDORequests(sdoRequest_t& e_sdo);
     int ReadSDO(ec_sdo_request_t *req, uint32_t& target);
