@@ -41,7 +41,7 @@ static ec_master_state_t      masterState = {};
 static ec_domain_t           *masterDomain = NULL; 
 static ec_domain_state_t      masterDomainState = {};  
 static char                   slaves_up = 0 ;
-struct timespec               syncTimer ;
+static struct timespec               syncTimer ;
 /****************************************************************************/
 #define TEST_BIT(NUM,N)     (NUM && (1 << N))
 #define TEST_BIT(NUM,N)     (NUM && (1 << N))
@@ -171,32 +171,6 @@ typedef struct
     ec_sdo_request *s_maxFollowingError ;
 } sdoRequest_t ;
 
-int check_master_state()
-{
-    ec_master_state_t ms;
-
-    ecrt_master_state(master, &ms);
-
-    if (ms.slaves_responding != masterState.slaves_responding){
-        printf("%u slave(s).\n", ms.slaves_responding);
-
-        if (ms.slaves_responding < 1) {
-            printf("Connection error, only %d slaves responding",ms.slaves_responding);
-            return 0;
-        }
-    }
-    if (ms.al_states != masterState.al_states){
-        printf("AL states: 0x%02X.\n", ms.al_states);
-    }
-    if (ms.link_up != masterState.link_up){
-        printf("Link is %s.\n", ms.link_up ? "up" : "down");
-        if(!ms.link_up) 
-        return 0;
-    }
-    masterState = ms;
-    return 1;
-}
-
 
 class ElmoECAT{
 public:
@@ -206,8 +180,8 @@ public:
     static const uint32_t vendorId_    = 0x0000009a ; 
     static const uint32_t productCode_ = 0x00030924 ;
 
-    ec_slave_config_t  *slaveConfig ;
-    ec_slave_config_state_t *slaveConfigState ;
+    ec_slave_config_t       *slaveConfig ;
+    ec_slave_config_state_t slaveConfigState ;
     offset_t            offset ;
     data_t              data ;
     uint8_t             *slavePdoDomain ;
@@ -307,9 +281,9 @@ public:
     void WriteSDO(ec_sdo_request_t *req, uint32_t data);
     void SetOperationMode(uint8_t om);
     
-    /*void CheckSlaveConfigurationState();
+    void CheckSlaveConfigurationState();
     int  CheckMasterState();
-    void CheckMasterDomainState();*/
+    void CheckMasterDomainState();
     void WaitForOPmode();
     int  GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr);
     int  SetProfilePositionParameters( ProfilePosParam& P );

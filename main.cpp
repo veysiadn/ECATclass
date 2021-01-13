@@ -24,7 +24,7 @@ int main()
     if ( !(e_motor.MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs) ))
         std::cout << "PDO registration succesfull..." << std::endl;
     e_motor.ConfigDCSync();
-    std::cout << "Initialization 4 started.." << std::endl;
+    std::cout << "DC Sync method configured.." << std::endl;
     ProfilePosParam PositionParameters; 
     sdoRequest_t e_sdo;
    // e_motor.ConfigSDORequests(e_sdo);
@@ -36,12 +36,11 @@ int main()
     PositionParameters.quickStopDeceleration = 1e6 ;
     PositionParameters.maxFollowingError     = 1e6 ; 
     e_motor.SetOperationMode(MODE_PROFILE_POSITION);
-    if ( (e_motor.SetProfilePositionParameters(PositionParameters) ) )
+    if ( !(e_motor.SetProfilePositionParameters(PositionParameters) ) )
         std::cout << "Profile Position Parameter Settings Succesfull.." << std::endl; 
 
-    if(!e_motor.ActivateMaster())
+    if(!(e_motor.ActivateMaster()   ))
         std::cout << "MasterActivation complete.." << std::endl;  
-
     e_motor.WaitForOPmode();
     return 0;
 }

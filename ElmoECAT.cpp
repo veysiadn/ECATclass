@@ -256,8 +256,9 @@ int ElmoECAT::ActivateMaster()
         std::cout << "Domain PDO registration error ... " << std::endl;
         return -1;
     }
+    return 0;
 }
-/*
+
 void ElmoECAT::CheckSlaveConfigurationState()
 {
     ec_slave_config_state_t s;
@@ -270,13 +271,13 @@ void ElmoECAT::CheckSlaveConfigurationState()
           printf("Gold Solo Slave : State 0x%02X.\n", s.al_state);
         slaves_up = NUM_OF_SLAVES;
     }
-    if (s.al_state != slaveConfig_state.al_state) {
+    if (s.al_state != slaveConfigState.al_state) {
         printf("AnaIn: State 0x%02X.\n", s.al_state);
     }
-    if (s.online != slaveConfig_state.online) {
+    if (s.online != slaveConfigState.online) {
         printf("AnaIn: %s.\n", s.online ? "online" : "offline");
     }
-    if (s.operational != slaveConfig_state.operational) {
+    if (s.operational != slaveConfigState.operational) {
         printf("AnaIn: %soperational.\n", s.operational ? "" : "Not ");
     }
     
@@ -323,7 +324,7 @@ void ElmoECAT::CheckMasterDomainState()
     }
     masterDomainState = ds;
 }
-*/
+
 void ElmoECAT::WaitForOPmode()
 {
     while (slaves_up != NUM_OF_SLAVES){
@@ -331,10 +332,9 @@ void ElmoECAT::WaitForOPmode()
         ecrt_domain_process(masterDomain);
         usleep(500);
 
-       /* CheckMasterState();
+        CheckMasterState();
         CheckMasterDomainState();
         CheckSlaveConfigurationState();
-        */
         clock_gettime(CLOCK_MONOTONIC, &syncTimer);
         ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
         ecrt_master_sync_slave_clocks(master);

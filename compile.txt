@@ -1,6 +1,6 @@
 ----------------- Dynamic Linking -------------------------
 
-g++ positionMode.cpp -o ectest -I/opt/etherlab/include \
+g++ main.cpp ElmoECAT.cpp -o ectest -I/opt/etherlab/include \
 -L/opt/etherlab/lib -lethercat -lpthread -lrt \
 -Wl,--rpath -Wl,/opt/etherlab/lib
  
@@ -8,7 +8,7 @@ g++ positionMode.cpp -o ectest -I/opt/etherlab/include \
 
  ------------------Static Linking --------------------------
 
-g++ -static positionMode.cpp -o staticEctest -I/opt/etherlab/include /opt/etherlab/lib/libethercat.a -lpthread -lrt  
+g++ -static main.cpp ElmoECAT.cpp -o  ectest -I/opt/etherlab/include /opt/etherlab/lib/libethercat.a -lpthread -lrt  
 
 
 -------------------------------------------------------------

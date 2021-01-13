@@ -187,6 +187,10 @@
  */
 #define EC_HAVE_REG_BY_POS
 
+/** Defined if the method ecrt_master_sync_reference_clock_to() is available.
+ */
+#define EC_HAVE_SYNC_TO
+
 /*****************************************************************************/
 
 /** End of list marker.
@@ -815,7 +819,7 @@ int ecrt_master_sdo_download(
         uint16_t slave_position, /**< Slave position. */
         uint16_t index, /**< Index of the SDO. */
         uint8_t subindex, /**< Subindex of the SDO. */
-        const uint8_t *data, /**< Data buffer to download. */
+        uint8_t *data, /**< Data buffer to download. */
         size_t data_size, /**< Size of the data buffer. */
         uint32_t *abort_code /**< Abort code of the SDO download. */
         );
@@ -834,7 +838,7 @@ int ecrt_master_sdo_download_complete(
         ec_master_t *master, /**< EtherCAT master. */
         uint16_t slave_position, /**< Slave position. */
         uint16_t index, /**< Index of the SDO. */
-        const uint8_t *data, /**< Data buffer to download. */
+        uint8_t *data, /**< Data buffer to download. */
         size_t data_size, /**< Size of the data buffer. */
         uint32_t *abort_code /**< Abort code of the SDO download. */
         );
@@ -849,14 +853,14 @@ int ecrt_master_sdo_download_complete(
  * \retval <0 Error code.
  */
 int ecrt_master_sdo_upload(
-        ec_master_t *master,    /**< EtherCAT master. */
+        ec_master_t *master, /**< EtherCAT master. */
         uint16_t slave_position, /**< Slave position. */
-        uint16_t index,         /**< Index of the SDO. */
-        uint8_t subindex,       /**< Subindex of the SDO. */
-        uint8_t *target,        /**< Target buffer for the upload. */
-        size_t target_size,      /**< Size of the target buffer. */
-        size_t *result_size,     /**< Uploaded data size. */
-        uint32_t *abort_code    /**< Abort code of the SDO upload. */
+        uint16_t index, /**< Index of the SDO. */
+        uint8_t subindex, /**< Subindex of the SDO. */
+        uint8_t *target, /**< Target buffer for the upload. */
+        size_t target_size, /**< Size of the target buffer. */
+        size_t *result_size, /**< Uploaded data size. */
+        uint32_t *abort_code /**< Abort code of the SDO upload. */
         );
 
 /** Executes an SoE write request.
@@ -956,10 +960,8 @@ int ecrt_master_set_send_interval(
  *
  * Has to be called cyclically by the application after ecrt_master_activate()
  * has returned.
- *
- * Returns the number of bytes sent.
  */
-size_t ecrt_master_send(
+void ecrt_master_send(
         ec_master_t *master /**< EtherCAT master. */
         );
 
@@ -1018,11 +1020,10 @@ int ecrt_master_link_state(
  * distributed clocks. The time is not incremented by the master itself, so
  * this method has to be called cyclically.
  *
- * \attention The first call of this method is used to calculate the phase
- * delay for the slaves' SYNC0/1 interrupts. Either the method has to be
- * called during the realtime cycle *only*, or the first time submitted must
- * be in-phase with the realtime cycle. Otherwise synchronisation problems can
- * occur.
+ * \attention The time passed to this method is used to calculate the phase of
+ * the slaves' SYNC0/1 interrupts. It should be called constantly at the same
+ * point of the realtime cycle. So it is recommended to call it at the start
+ * of the calculations to avoid deviancies due to changing execution times.
  *
  * The time is used when setting the slaves' <tt>System Time Offset</tt> and
  * <tt>Cyclic Operation Start Time</tt> registers and when synchronizing the
@@ -1030,7 +1031,8 @@ int ecrt_master_link_state(
  * ecrt_master_sync_reference_clock().
  *
  * The time is defined as nanoseconds from 2000-01-01 00:00. Converting an
- * epoch time can be done with the EC_TIMEVAL2NANO() macro.
+ * epoch time can be done with the EC_TIMEVAL2NANO() macro, but is not
+ * necessary, since the absolute value is not of any interest.
  */
 void ecrt_master_application_time(
         ec_master_t *master, /**< EtherCAT master. */
@@ -1044,6 +1046,16 @@ void ecrt_master_application_time(
  */
 void ecrt_master_sync_reference_clock(
         ec_master_t *master /**< EtherCAT master. */
+        );
+
+/** Queues the DC reference clock drift compensation datagram for sending.
+ *
+ * The reference clock will by synchronized to the time passed in the
+ * sync_time parameter.
+ */
+void ecrt_master_sync_reference_clock_to(
+        ec_master_t *master, /**< EtherCAT master. */
+        uint64_t sync_time /**< Sync reference clock to this time. */
         );
 
 /** Queues the DC clock drift compensation datagram for sending.
@@ -1146,17 +1158,6 @@ void ecrt_slave_config_watchdog(
                                       is not written, so the default is used.
                                      */
         );
-
-/** Configure whether a slave allows overlapping PDOs.
- *
- * Overlapping PDOs allows inputs to use the same space as outputs on the frame.
- * This reduces the frame length.
- */
-void ecrt_slave_config_overlapping_pdos(
-        ec_slave_config_t *sc, /**< Slave configuration. */
-        uint8_t allow_overlapping_pdos /**< Allow overlapping PDOs */
-        );
-
 
 /** Add a PDO to a sync manager's PDO assignment.
  *
@@ -2037,12 +2038,6 @@ void ecrt_reg_request_read(
         size_t size /**< Size to write. */
         );
 
-/*****************************************************************************/
-
-#ifdef __cplusplus
-}
-#endif
-
 /******************************************************************************
  * Bitwise read/write macros
  *****************************************************************************/
@@ -2189,6 +2184,42 @@ void ecrt_reg_request_read(
      ((int64_t) le64_to_cpup((void *) (DATA)))
 
 /******************************************************************************
+ * Floating-point read functions and macros (userspace only)
+ *****************************************************************************/
+
+#ifndef __KERNEL__
+
+/** Read a 32-bit floating-point value from EtherCAT data.
+ *
+ * \param data EtherCAT data pointer
+ * \return EtherCAT data value
+ */
+float ecrt_read_real(const void *data);
+
+/** Read a 32-bit floating-point value from EtherCAT data.
+ *
+ * \param DATA EtherCAT data pointer
+ * \return EtherCAT data value
+ */
+#define EC_READ_REAL(DATA) ecrt_read_real(DATA)
+
+/** Read a 64-bit floating-point value from EtherCAT data.
+ *
+ * \param data EtherCAT data pointer
+ * \return EtherCAT data value
+ */
+double ecrt_read_lreal(const void *data);
+
+/** Read a 64-bit floating-point value from EtherCAT data.
+ *
+ * \param DATA EtherCAT data pointer
+ * \return EtherCAT data value
+ */
+#define EC_READ_LREAL(DATA) ecrt_read_lreal(DATA)
+
+#endif // ifndef __KERNEL__
+
+/******************************************************************************
  * Write macros
  *****************************************************************************/
 
@@ -2259,6 +2290,48 @@ void ecrt_reg_request_read(
  * \param VAL new value
  */
 #define EC_WRITE_S64(DATA, VAL) EC_WRITE_U64(DATA, VAL)
+
+/******************************************************************************
+ * Floating-point write functions and macros (userspace only)
+ *****************************************************************************/
+
+#ifndef __KERNEL__
+
+/** Write a 32-bit floating-point value to EtherCAT data.
+ *
+ * \param data EtherCAT data pointer
+ * \param value new value
+ */
+void ecrt_write_real(void *data, float value);
+
+/** Write a 32-bit floating-point value to EtherCAT data.
+ *
+ * \param DATA EtherCAT data pointer
+ * \param VAL new value
+ */
+#define EC_WRITE_REAL(DATA, VAL) ecrt_write_real(DATA, VAL)
+
+/** Write a 64-bit floating-point value to EtherCAT data.
+ *
+ * \param data EtherCAT data pointer
+ * \param value new value
+ */
+void ecrt_write_lreal(void *data, double value);
+
+/** Write a 64-bit floating-point value to EtherCAT data.
+ *
+ * \param DATA EtherCAT data pointer
+ * \param VAL new value
+ */
+#define EC_WRITE_LREAL(DATA, VAL) ecrt_write_lreal(DATA, VAL)
+
+#endif // ifndef __KERNEL__
+
+/*****************************************************************************/
+
+#ifdef __cplusplus
+}
+#endif
 
 /*****************************************************************************/
 
