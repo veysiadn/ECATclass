@@ -85,15 +85,21 @@ typedef struct
     unsigned int max_tor ;
     unsigned int control_word ;
     unsigned int mode ;
-    unsigned int vel_offset ;
-    unsigned int tor_offset ;
+    unsigned int profileAcc ;
+    unsigned int profileDec ;
+    unsigned int quicStopDec ;
+    unsigned int profileVel ;
 
     unsigned int actual_pos ;
+    unsigned int posFollowingError ;
     unsigned int actual_vel ;
     unsigned int actual_cur ;
     unsigned int actual_tor ;
     unsigned int status_word ;
     unsigned int mode_display ;
+    unsigned int dcCircuitLinkVoltage ;
+    unsigned int errorCode ;
+    unsigned int extraStatusReg ;
 } offset_t ;
 
 
@@ -178,60 +184,84 @@ public:
     uint32_t cycleTime;
     uint32_t sync0_shift;
 
-    ec_pdo_entry_reg_t profilePosition_PdoRegs[6] = {
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_velocityActvalue,   &offset.actual_vel},
-        {alias_, position_, vendorId_,productCode_,od_currentActualValue, &offset.actual_cur},
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
+    ec_pdo_entry_reg_t masterDomain_PdoRegs[20] = {
+        // Input PDO mapping ; 
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal ,        &offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_,od_positonFollowingError ,    &offset.posFollowingError},
+        {alias_, position_, vendorId_,productCode_,od_torqueActualValue ,        &offset.actual_tor},
+        {alias_, position_, vendorId_,productCode_,od_statusWord ,               &offset.status_word},
+        {alias_, position_, vendorId_,productCode_,od_operationModeDisplay ,     &offset.mode_display},
+        {alias_, position_, vendorId_,productCode_,od_velocityActvalue ,         &offset.actual_vel},
+        {alias_, position_, vendorId_,productCode_,od_currentActualValue ,       &offset.actual_cur},
+        {alias_, position_, vendorId_,productCode_,od_dcCircuitLinkVoltage ,     &offset.dcCircuitLinkVoltage},
+        {alias_, position_, vendorId_,productCode_,od_errorCode ,                &offset.errorCode},
+        {alias_, position_, vendorId_,productCode_,od_extraStatusRegister ,      &offset.extraStatusReg},
+
+        // Output PDO Mapping ; 
+        {alias_, position_, vendorId_,productCode_,od_targetPosition,            &offset.target_pos},
+        {alias_, position_, vendorId_,productCode_,od_targetVelocity ,           &offset.target_vel},
+        {alias_, position_, vendorId_,productCode_,od_targetTorque,              &offset.target_tor},
+        {alias_, position_, vendorId_,productCode_,od_torqueMax ,                &offset.max_tor},
+        {alias_, position_, vendorId_,productCode_,od_controlWord ,              &offset.control_word},
+        {alias_, position_, vendorId_,productCode_,od_operationMode ,            &offset.mode},
+        {alias_, position_, vendorId_,productCode_,od_profileVelocity ,          &offset.profileVel},
+        {alias_, position_, vendorId_,productCode_,od_profileAcceleration ,      &offset.profileAcc},
+        {alias_, position_, vendorId_,productCode_,od_profileDeceleration ,      &offset.profileDec},
+        {alias_, position_, vendorId_,productCode_,od_quickStopDeceleration ,    &offset.quicStopDec},
     };
     /*******************************************************************************/
-    //RxPdo
-    /*static ec_pdo_entry_info_t motor_rxpdo_entries[8] =
-    {
-        {0x607a, 0x00, 32}, //pos_target_value  s32
-        {0x60ff, 0x00, 32}, //vel_target_value  s32
-        {0x6071, 0x00, 16}, //tor_target_value  s16
-        {0x6072, 0x00, 16}, //tor_max_value     s16
-        {0x6040, 0x00, 16}, //control_word      u16
-        {0x6060, 0x00, 8},  //op_mode            u8
+    ec_pdo_entry_info_t GS_PDO_Entries[22] = {
+     // Outputs from master to slave , WRITE to this indexes
+    {od_targetPosition, 32},    // TARGET_POSITION
+    {od_targetVelocity, 32},    // TARGET_VELOCITY
+    {od_targetTorque,   16},    // TARGET_TORQUE
+    {od_maxTorque,      16},    // MAX_TORQUE
+    {od_controlWord,    16},    // CONTROL_WORD
+    {od_operationMode,   8},     // MODE_OF_OPERATION
+    {0x0000, 0x00,    8}, /* Gap */
+    {od_profileVelocity,        32},     // PROFILE_VELOCITY
+    {od_profileAcceleration,    32},     // PROFILE_ACCELERATION
+    {od_profileDeceleration,    32},     // PROFILE_DECELERATION
+    {od_quickStopDeceleration,  32},     // QUICK_STOP_DECELERATION
+    //{0x60b1, 0x00, 32},     // VELOCITY_OFFSET
 
-        {0x60b1, 0x00, 32}, //velocity offset   s32
-        {0x60b2, 0x00, 16}, //torque_offset     s16
-    };
-   static ec_pdo_info_t       motor_rxpdos[3] =
-    {
-        {0x1605, 6, motor_rxpdo_entries + 0},
-        {0x1617, 1, motor_rxpdo_entries + 6},
-        {0x1618, 1, motor_rxpdo_entries + 7},
-    };
-    // TxPdo
-    static ec_pdo_entry_info_t motor_txpdo_entries[6] =
-    {
-        {0x6064, 0x00, 32}, //pos_actual_value  s32
-        {0x606c, 0x00, 32}, //vel_actual_value  s32
-        {0x6078, 0x00, 16}, //cur_actual_value  s16
-        {0x6077, 0x00, 16}, //tor_actual_value  s16
+    // Inputs from slave to the master READ from this indexes
+    {od_positionActualVal,     32},     // POSITION_ACTUAL_VALUE
+    {od_positonFollowingError, 32},     // POSITION_FOLLOWING_ERROR_ACTUAL_VALUE
+    {od_torqueActualValue, 16},        // TORQUE_ACTUAL_VALUE
+    {od_statusWord,        16},        // STATUS_WORD
+    {od_operationModeDisplay, 8},      // CUR_MODE_OF_OPERATION
+    {0x0000, 0x00, 8}, /* Gap */
+    {od_velocityActvalue,    32},      // VELOCITY_SENSOR_ACTUAL_VALUE (COUTNS/SEC)
+    {od_dcCircuitLinkVoltage, 32},             //DC Link Circuit Voltage
+    {od_currentActualValue, 16},        // CURRENT_ACTUAL_VALUE
+    {od_extraStatusRegister, 16},             // EXTRA_STATUS_REGISTER
+    {od_errorCode,    16},             // ERROR_CODE
+};
 
-        {0x6041, 0x00, 16}, //status_word       u16
-        {0x6061, 0x00, 8},  //mode_display    u8
-    };
-    static ec_pdo_info_t motor_txpdos[6] =
-    {
-        {0x1a0e, 1, motor_txpdo_entries + 0}, //pos_actual_value  s32
-        {0x1a11, 1, motor_txpdo_entries + 1}, //vel_actual_value  s32
-        {0x1a1f, 1, motor_txpdo_entries + 2}, //cur_actual_value  s16
-        {0x1a13, 1, motor_txpdo_entries + 3}, //tor_actual_value  s16
+    ec_pdo_info_t GS_PDO_Indexes[11] = {
+        {0x1605, 7, GS_PDO_Entries + 0},   //16XX From master to slave outputs e.g Target Position RxPDO
+        {0x1611, 1, GS_PDO_Entries + 7}, 
+        {0x1613, 1, GS_PDO_Entries + 8},
+        {0x1614, 1, GS_PDO_Entries + 9},
+        {0x161f, 1, GS_PDO_Entries + 10},
 
-        {0x1a0a, 1, motor_txpdo_entries + 4}, //status_word       u16
-        {0x1a0b, 1, motor_txpdo_entries + 5}, //module_display    u8
+        {0x1a04, 6, GS_PDO_Entries + 11},   //1AXX From slave to the master inputs e.g Actual Position TxPDO
+        {0x1a0f, 1, GS_PDO_Entries + 17},
+        {0x1a18, 1, GS_PDO_Entries + 18},
+        {0x1a1f, 1, GS_PDO_Entries + 19},
+        {0x1a21, 1, GS_PDO_Entries + 20},
+        {0x1a26, 1, GS_PDO_Entries + 21},
     };
-    static ec_sync_info_t syncs[3] = {
-        {2, EC_DIR_OUTPUT, 3, motor_rxpdos, EC_WD_ENABLE},
-        {3, EC_DIR_INPUT,  6, motor_txpdos, EC_WD_ENABLE},
+
+    ec_sync_info_t GS_Syncs[5] = {
+        {0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE},
+        {1, EC_DIR_INPUT,  0, NULL, EC_WD_DISABLE},
+        {2, EC_DIR_OUTPUT, 5, GS_PDO_Indexes + 0, EC_WD_DISABLE},
+        {3, EC_DIR_INPUT,  6, GS_PDO_Indexes + 5, EC_WD_DISABLE},
         {0xff}
-    };*/
+    };
+
 
     ElmoECAT();
     ~ElmoECAT();
@@ -239,18 +269,17 @@ public:
     void ConfigureMaster();
     void ConfigureSlave(uint16_t pos);
     void SetProfilePositionPdoRegs(uint16_t  pos);
-    int MapPDOs(ec_sync_info_t *syncs, ec_pdo_entry_reg_t *pdo_entry_reg);
+    int  MapPDOs(ec_sync_info_t *syncs, ec_pdo_entry_reg_t *pdo_entry_reg);
     void ConfigDCSync();
-    int ConfigSDORequests(sdoRequest_t& e_sdo);
-    int ReadSDO(ec_sdo_request_t *req, uint32_t& target);
+    int  ConfigSDORequests(sdoRequest_t& e_sdo);
+    int  ReadSDO(ec_sdo_request_t *req, uint32_t& target);
     void WriteSDO(ec_sdo_request_t *req, uint32_t data);
     void SetOperationMode(uint8_t om);
-    int GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr);
-    int SetProfilePositionParameters( ProfilePosParam& P );
-    int SetProfileVelocityParameters(ProfileVelocityParam& P);
-    void  ActivateMaster();
+    int  GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr);
+    int  SetProfilePositionParameters( ProfilePosParam& P );
+    int  SetProfileVelocityParameters(ProfileVelocityParam& P);
+    void ActivateMaster();
     void ResetMaster();
-    int SetMode(uint8_t *slavePdoDomain, int8_t mode_);
 
 
 /*
