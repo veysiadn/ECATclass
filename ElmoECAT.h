@@ -179,23 +179,24 @@ public:
     static const uint32_t productCode_ = 0x00030924 ;
 
     ec_slave_config_t  *slaveConfig ;
-    offset_t            offset;
-    data_t              data;
+    offset_t            offset ;
+    data_t              data ;
+    uint8_t             *slavePdoDomain ;
     uint32_t cycleTime;
     uint32_t sync0_shift;
 
     ec_pdo_entry_reg_t masterDomain_PdoRegs[20] = {
         // Input PDO mapping ; 
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal ,        &offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_positonFollowingError ,    &offset.posFollowingError},
-        {alias_, position_, vendorId_,productCode_,od_torqueActualValue ,        &offset.actual_tor},
-        {alias_, position_, vendorId_,productCode_,od_statusWord ,               &offset.status_word},
-        {alias_, position_, vendorId_,productCode_,od_operationModeDisplay ,     &offset.mode_display},
-        {alias_, position_, vendorId_,productCode_,od_velocityActvalue ,         &offset.actual_vel},
-        {alias_, position_, vendorId_,productCode_,od_currentActualValue ,       &offset.actual_cur},
-        {alias_, position_, vendorId_,productCode_,od_dcCircuitLinkVoltage ,     &offset.dcCircuitLinkVoltage},
-        {alias_, position_, vendorId_,productCode_,od_errorCode ,                &offset.errorCode},
-        {alias_, position_, vendorId_,productCode_,od_extraStatusRegister ,      &offset.extraStatusReg},
+        {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_, od_positonFollowingError ,    &offset.posFollowingError},
+        {alias_, position_, vendorId_,productCode_, od_torqueActualValue ,        &offset.actual_tor},
+        {alias_, position_, vendorId_,productCode_, od_statusWord ,               &offset.status_word},
+        {alias_, position_, vendorId_,productCode_, od_operationModeDisplay ,     &offset.mode_display},
+        {alias_, position_, vendorId_,productCode_, od_velocityActvalue ,         &offset.actual_vel},
+        {alias_, position_, vendorId_,productCode_, od_currentActualValue ,       &offset.actual_cur},
+        {alias_, position_, vendorId_,productCode_, od_dcCircuitLinkVoltage ,     &offset.dcCircuitLinkVoltage},
+        {alias_, position_, vendorId_,productCode_, od_errorCode ,                &offset.errorCode},
+        {alias_, position_, vendorId_,productCode_, od_extraStatusRegister ,      &offset.extraStatusReg},
 
         // Output PDO Mapping ; 
         {alias_, position_, vendorId_,productCode_,od_targetPosition,            &offset.target_pos},
@@ -215,7 +216,7 @@ public:
     {od_targetPosition, 32},    // TARGET_POSITION
     {od_targetVelocity, 32},    // TARGET_VELOCITY
     {od_targetTorque,   16},    // TARGET_TORQUE
-    {od_maxTorque,      16},    // MAX_TORQUE
+    {od_torqueMax,      16},    // MAX_TORQUE
     {od_controlWord,    16},    // CONTROL_WORD
     {od_operationMode,   8},     // MODE_OF_OPERATION
     {0x0000, 0x00,    8}, /* Gap */
@@ -257,7 +258,7 @@ public:
     ec_sync_info_t GS_Syncs[5] = {
         {0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE},
         {1, EC_DIR_INPUT,  0, NULL, EC_WD_DISABLE},
-        {2, EC_DIR_OUTPUT, 5, GS_PDO_Indexes + 0, EC_WD_DISABLE},
+        {2, EC_DIR_OUTPUT, 5, GS_PDO_Indexes + 0, EC_WD_ENABLE},
         {3, EC_DIR_INPUT,  6, GS_PDO_Indexes + 5, EC_WD_DISABLE},
         {0xff}
     };

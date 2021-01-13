@@ -18,7 +18,7 @@ int main()
 
     e_motor.ConfigureMaster();
     std::cout << "Initialization  2 started.." << std::endl;
-    e_motor.position_      = 0 ;
+    e_motor.position_ = 0 ;
     e_motor.ConfigureSlave(e_motor.position_);
     std::cout << "Initialization  3 started.." << std::endl;
     e_motor.MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs);
