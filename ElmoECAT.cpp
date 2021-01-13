@@ -204,7 +204,7 @@ int ElmoECAT::SetProfilePositionParameters( ProfilePosParam& P )
         return -1;
     }
     // max following error 
-    if(ecrt_slave_config_sdo16(slaveConfig,od_maxFollowingError,P.maxFollowingError) < 0) {
+    if(ecrt_slave_config_sdo32(slaveConfig,od_maxFollowingError,P.maxFollowingError) < 0) {
         std::cout << "Set profile deceleration failed ! " << std::endl;
         return -1;
     }   
@@ -319,7 +319,7 @@ void ElmoECAT::CheckMasterDomainState()
     if (ds.wc_state != masterDomainState.wc_state)
         printf("masterDomain: State %u.\n", ds.wc_state);
     if(masterDomainState.wc_state == EC_WC_COMPLETE){
-        printf("All slaves configured...\n");
+       // printf("All slaves configured...\n");
         masterDomainState = ds;
     }
     masterDomainState = ds;
@@ -332,9 +332,10 @@ void ElmoECAT::WaitForOPmode()
         ecrt_domain_process(masterDomain);
         usleep(500);
 
-        CheckMasterState();
-        CheckMasterDomainState();
-        CheckSlaveConfigurationState();
+        this->CheckMasterState();
+        this->CheckMasterDomainState();
+        this->CheckSlaveConfigurationState();
+
         clock_gettime(CLOCK_MONOTONIC, &syncTimer);
         ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
         ecrt_master_sync_slave_clocks(master);
