@@ -26,8 +26,8 @@ int main()
     std::cout << "Initialization 4 started.." << std::endl;
     ProfilePosParam PositionParameters; 
     sdoRequest_t e_sdo;
-    e_motor.ConfigSDORequests(e_sdo);
-    e_motor.GetProfilePositionParameters(P,e_sdo);
+   // e_motor.ConfigSDORequests(e_sdo);
+    //e_motor.GetProfilePositionParameters(PositionParameters,e_sdo);
     PositionParameters.maxProfileVelocity    = 1e5 ;
     PositionParameters.profileAcceleration   = 1e6 ;
     PositionParameters.profileDeceleration   = 1e6 ;
