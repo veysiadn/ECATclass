@@ -185,7 +185,8 @@ public:
         {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
         {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos}
         {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
-    }
+        {}
+    };
     /*******************************************************************************/
     //RxPdo
     /*static ec_pdo_entry_info_t motor_rxpdo_entries[8] =
