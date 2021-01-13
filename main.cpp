@@ -16,12 +16,13 @@ int main()
         return -1;
     }
 
-    e_motor.ConfigureMaster();
-    std::cout << "Initialization  2 started.." << std::endl;
+    if ( (e_motor.ConfigureMaster()) )
+        std::cout << "Master configuration succesfull..." << std::endl;
     e_motor.position_ = 0 ;
-    e_motor.ConfigureSlave(e_motor.position_);
-    std::cout << "Initialization  3 started.." << std::endl;
-    e_motor.MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs);
+    if ( !(e_motor.ConfigureSlave(e_motor.position_)) )
+        std::cout << "Slave configuration succesfull..." << std::endl;
+    if ( !(e_motor.MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs) )
+        std::cout << "PDO registration succesfull..." << std::endl;
     e_motor.ConfigDCSync();
     std::cout << "Initialization 4 started.." << std::endl;
     ProfilePosParam PositionParameters; 
@@ -35,9 +36,12 @@ int main()
     PositionParameters.quickStopDeceleration = 1e6 ;
     PositionParameters.maxFollowingError     = 1e6 ; 
     e_motor.SetOperationMode(MODE_PROFILE_POSITION);
-    e_motor.SetProfilePositionParameters(PositionParameters);
-    std::cout << "Initialization 5 started.." << std::endl; 
-    e_motor.ActivateMaster();
-    std::cout << "Initialization 6 started.." << std::endl;     
+    if ( (e_motor.SetProfilePositionParameters(PositionParameters) )
+        std::cout << "Profile Position Parameter Settings Succesfull.." << std::endl; 
+
+    if(!e_motor.ActivateMaster())
+        std::cout << "MasterActivation complete.." << std::endl;  
+
+    e_motor.WaitForOPmode();
     return 0;
 }

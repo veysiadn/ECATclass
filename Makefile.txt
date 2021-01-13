@@ -1,0 +1,20 @@
+# Makefile for Writing Make Files Example
+ 
+# *****************************************************
+# Variables to control Makefile operation
+ 
+CC = g++
+CFLAGS = -Wall -g
+ 
+# ****************************************************
+# Targets needed to bring the executable up to date
+ 
+ectest: ectest.o ElmoECAT.o
+    $(CC) $(CFLAGS) -o ectes ectest.o ElmoECAT.o
+ 
+# The ectest.o target can be written more simply
+ 
+ectest.o: ectest.cpp ElmoECAT.h Square.h
+    $(CC) $(CFLAGS) -c ectest.cpp
+ 
+ElmoECAT.o: ElmoECAT.h

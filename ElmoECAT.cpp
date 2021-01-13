@@ -14,24 +14,24 @@ ElmoECAT::~ElmoECAT()
 
 
 
-void ElmoECAT::ConfigureMaster()
+int ElmoECAT::ConfigureMaster()
 {
     master = ecrt_request_master(0);    
     if (!master) {
         std::cout << "Failed to request master instance ! " << std::endl;
-        return ;
+        return -1 ;
     }
     masterDomain = ecrt_master_create_domain(master);
     if(!masterDomain) {
         std::cout << "Failed to create master domain ! " << std::endl;
-        return ;
+        return -1 ;
     }
-
+    return 0 ;
 }
 // before calling this function you have to call ConfigureMaster() function \
     and after that you have to specifiy your slaves alias, position, vendorId, and product code\
     this information can be obtained via writing " $ ethercat cstruct " to command line.
-void ElmoECAT::ConfigureSlave(uint16_t pos)
+int ElmoECAT::ConfigureSlave(uint16_t pos)
 {
     slaveConfig = ecrt_master_slave_config(master,alias_,pos,vendorId_,productCode_);
     if(!slaveConfig) {
@@ -242,18 +242,106 @@ int ElmoECAT::SetProfileVelocityParameters(ProfileVelocityParam& P)
 }
 
 
-void ElmoECAT::ActivateMaster()
+int ElmoECAT::ActivateMaster()
 {
     // Before activating master all configuration should be done \
     activating master means now you're ready for realtime PDO data exchange
     if ( ecrt_master_activate(master) ) {
         std::cout << " Master activation error ! " << std::endl;
-        return ;
+        return -1;
     }
     if(!(slavePdoDomain = ecrt_domain_data(masterDomain)))
     {
         std::cout << "Domain PDO registration error ... " << std::endl;
-        return ;
+        return -1;
+    }
+}
+
+void ElmoECAT::CheckSlaveConfigurationState()
+{
+    ec_slave_config_state_t s;
+    ecrt_slave_config_state(slaveConfig, &s);
+
+    if (slaves_up < NUM_OF_SLAVES && s.al_state != 0x08) {
+        printf("Gold Solo Slave  : State 0x%02X.\n", s.al_state);
+    }
+    if (slaves_up < NUM_OF_SLAVES && s.al_state == 0x08) {
+          printf("Gold Solo Slave : State 0x%02X.\n", s.al_state);
+        slaves_up = NUM_OF_SLAVES;
+    }
+    if (s.al_state != slaveConfig_state.al_state) {
+        printf("AnaIn: State 0x%02X.\n", s.al_state);
+    }
+    if (s.online != slaveConfig_state.online) {
+        printf("AnaIn: %s.\n", s.online ? "online" : "offline");
+    }
+    if (s.operational != slaveConfig_state.operational) {
+        printf("AnaIn: %soperational.\n", s.operational ? "" : "Not ");
+    }
+    
+     slaveConfigState = s;
+}
+
+int ElmoECAT::CheckMasterState()
+{
+    ec_master_state_t ms;
+    ecrt_master_state(master, &ms);
+
+    if (ms.slaves_responding != masterState.slaves_responding){
+        printf("%u slave(s).\n", ms.slaves_responding);
+
+        if (ms.slaves_responding < 1) {
+            printf("Connection error, only %d slaves responding",ms.slaves_responding);
+            return 0;
+        }
+    }
+    if (ms.al_states != masterState.al_states){
+        printf("AL states: 0x%02X.\n", ms.al_states);
+    }
+    if (ms.link_up != masterState.link_up){
+        printf("Link is %s.\n", ms.link_up ? "up" : "down");
+        if(!ms.link_up) 
+        return 0;
+    }
+    masterState = ms;
+    return 1;
+}
+
+void ElmoECAT::CheckMasterDomainState()
+{
+    ec_domain_state_t ds;                     //Domain instance
+    ecrt_domain_state(masterDomain, &ds);
+
+    if (ds.working_counter != masterDomainState.working_counter)
+        printf("masterDomain: WC %u.\n", ds.working_counter);
+    if (ds.wc_state != masterDomainState.wc_state)
+        printf("masterDomain: State %u.\n", ds.wc_state);
+    if(masterDomainState.wc_state == EC_WC_COMPLETE){
+        printf("All slaves configured...\n");
+        masterDomainState = ds;
+    }
+    masterDomainState = ds;
+}
+
+void ElmoECAT::WaitForOPmode()
+{
+    while (slaves_up != NUM_OF_SLAVES){
+        ecrt_master_receive(master);
+        ecrt_domain_process(masterDomain);
+        usleep(500);
+
+        CheckMasterState();
+        CheckMasterDomainState();
+        CheckSlaveConfigurationState();
+
+        clock_gettime(CLOCK_TO_USE, &syncTimer);
+        ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
+        ecrt_master_sync_slave_clocks(master);
+        ecrt_master_application_time(master, TIMESPEC2NS(syncTimer));
+
+        ecrt_domain_queue(masterDomain);                
+        ecrt_master_send(master);
+        usleep(500);
     }
 }
 
