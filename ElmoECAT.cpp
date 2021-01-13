@@ -250,7 +250,7 @@ void ElmoECAT::ActivateMaster()
         std::cout << " Master activation error ! " << std::endl;
         return ;
     }
-    if(ecrt_domain_data(masterDomain))
+    if(!(slavePdoDomain = ecrt_domain_data(masterDomain)))
     {
         std::cout << "Domain PDO registration error ... " << std::endl;
         return ;

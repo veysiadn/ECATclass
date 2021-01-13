@@ -37,9 +37,9 @@
 #include "objectdictionary.h"                   // Object dictionary paramaters PDO index and default values in here.
 /****************************************************************************/
 static ec_master_t           *master = NULL ;
-static ec_master_state_t     masterState = {};
+static ec_master_state_t      masterState = {};
 static ec_domain_t           *masterDomain = NULL; 
-static ec_domain_state_t     masterDomainState = {};  
+static ec_domain_state_t      masterDomainState = {};  
 
 /****************************************************************************/
 #define TEST_BIT(NUM,N)     (NUM && (1 << N))
@@ -181,10 +181,11 @@ public:
     ec_slave_config_t  *slaveConfig ;
     offset_t            offset;
     data_t              data;
+    uint8_t            *slavePdoDomain;
     uint32_t cycleTime;
     uint32_t sync0_shift;
 
-    ec_pdo_entry_reg_t masterDomain_PdoRegs[20] = {
+    ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 
         {alias_, position_, vendorId_,productCode_,od_positionActualVal ,        &offset.actual_pos},
         {alias_, position_, vendorId_,productCode_,od_positonFollowingError ,    &offset.posFollowingError},
@@ -208,6 +209,7 @@ public:
         {alias_, position_, vendorId_,productCode_,od_profileAcceleration ,      &offset.profileAcc},
         {alias_, position_, vendorId_,productCode_,od_profileDeceleration ,      &offset.profileDec},
         {alias_, position_, vendorId_,productCode_,od_quickStopDeceleration ,    &offset.quicStopDec},
+        {}
     };
     /*******************************************************************************/
     ec_pdo_entry_info_t GS_PDO_Entries[22] = {
@@ -215,7 +217,7 @@ public:
     {od_targetPosition, 32},    // TARGET_POSITION
     {od_targetVelocity, 32},    // TARGET_VELOCITY
     {od_targetTorque,   16},    // TARGET_TORQUE
-    {od_maxTorque,      16},    // MAX_TORQUE
+    {od_torqueMax,      16},    // MAX_TORQUE
     {od_controlWord,    16},    // CONTROL_WORD
     {od_operationMode,   8},     // MODE_OF_OPERATION
     {0x0000, 0x00,    8}, /* Gap */
@@ -257,7 +259,7 @@ public:
     ec_sync_info_t GS_Syncs[5] = {
         {0, EC_DIR_OUTPUT, 0, NULL, EC_WD_DISABLE},
         {1, EC_DIR_INPUT,  0, NULL, EC_WD_DISABLE},
-        {2, EC_DIR_OUTPUT, 5, GS_PDO_Indexes + 0, EC_WD_DISABLE},
+        {2, EC_DIR_OUTPUT, 5, GS_PDO_Indexes + 0, EC_WD_ENABLE},
         {3, EC_DIR_INPUT,  6, GS_PDO_Indexes + 5, EC_WD_DISABLE},
         {0xff}
     };
