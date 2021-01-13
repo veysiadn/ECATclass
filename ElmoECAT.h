@@ -179,24 +179,24 @@ public:
     static const uint32_t productCode_ = 0x00030924 ;
 
     ec_slave_config_t  *slaveConfig ;
-    offset_t            offset;
-    data_t              data;
-    uint8_t            *slavePdoDomain;
+    offset_t            offset ;
+    data_t              data ;
+    uint8_t             *slavePdoDomain ;
     uint32_t cycleTime;
     uint32_t sync0_shift;
 
     ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal ,        &offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_positonFollowingError ,    &offset.posFollowingError},
-        {alias_, position_, vendorId_,productCode_,od_torqueActualValue ,        &offset.actual_tor},
-        {alias_, position_, vendorId_,productCode_,od_statusWord ,               &offset.status_word},
-        {alias_, position_, vendorId_,productCode_,od_operationModeDisplay ,     &offset.mode_display},
-        {alias_, position_, vendorId_,productCode_,od_velocityActvalue ,         &offset.actual_vel},
-        {alias_, position_, vendorId_,productCode_,od_currentActualValue ,       &offset.actual_cur},
-        {alias_, position_, vendorId_,productCode_,od_dcCircuitLinkVoltage ,     &offset.dcCircuitLinkVoltage},
-        {alias_, position_, vendorId_,productCode_,od_errorCode ,                &offset.errorCode},
-        {alias_, position_, vendorId_,productCode_,od_extraStatusRegister ,      &offset.extraStatusReg},
+        {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_, od_positonFollowingError ,    &offset.posFollowingError},
+        {alias_, position_, vendorId_,productCode_, od_torqueActualValue ,        &offset.actual_tor},
+        {alias_, position_, vendorId_,productCode_, od_statusWord ,               &offset.status_word},
+        {alias_, position_, vendorId_,productCode_, od_operationModeDisplay ,     &offset.mode_display},
+        {alias_, position_, vendorId_,productCode_, od_velocityActvalue ,         &offset.actual_vel},
+        {alias_, position_, vendorId_,productCode_, od_currentActualValue ,       &offset.actual_cur},
+        {alias_, position_, vendorId_,productCode_, od_dcCircuitLinkVoltage ,     &offset.dcCircuitLinkVoltage},
+        {alias_, position_, vendorId_,productCode_, od_errorCode ,                &offset.errorCode},
+        {alias_, position_, vendorId_,productCode_, od_extraStatusRegister ,      &offset.extraStatusReg},
 
         // Output PDO Mapping ; 
         {alias_, position_, vendorId_,productCode_,od_targetPosition,            &offset.target_pos},
