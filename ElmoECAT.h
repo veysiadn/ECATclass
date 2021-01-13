@@ -48,6 +48,7 @@ struct timespec               syncTimer ;
 #define SET_BIT(NUM,N)      (NUM |  (1 << N))
 #define RESET_BIT(NUM,N)    (NUM & ~(1 << N))
 #define NUM_OF_SLAVES   1
+#define TIMESPEC2NS(T) ((uint64_t) (T).tv_sec * 1e9 + (T).tv_nsec)
 //VeysiAdn operationModes
 typedef enum
 {

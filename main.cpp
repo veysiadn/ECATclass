@@ -21,7 +21,7 @@ int main()
     e_motor.position_ = 0 ;
     if ( !(e_motor.ConfigureSlave(e_motor.position_)) )
         std::cout << "Slave configuration succesfull..." << std::endl;
-    if ( !(e_motor.MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs) )
+    if ( !(e_motor.MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs) ))
         std::cout << "PDO registration succesfull..." << std::endl;
     e_motor.ConfigDCSync();
     std::cout << "Initialization 4 started.." << std::endl;
@@ -36,7 +36,7 @@ int main()
     PositionParameters.quickStopDeceleration = 1e6 ;
     PositionParameters.maxFollowingError     = 1e6 ; 
     e_motor.SetOperationMode(MODE_PROFILE_POSITION);
-    if ( (e_motor.SetProfilePositionParameters(PositionParameters) )
+    if ( (e_motor.SetProfilePositionParameters(PositionParameters) ) )
         std::cout << "Profile Position Parameter Settings Succesfull.." << std::endl; 
 
     if(!e_motor.ActivateMaster())

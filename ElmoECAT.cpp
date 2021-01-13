@@ -36,8 +36,9 @@ int ElmoECAT::ConfigureSlave(uint16_t pos)
     slaveConfig = ecrt_master_slave_config(master,alias_,pos,vendorId_,productCode_);
     if(!slaveConfig) {
         std::cout << "Failed to  configure slave ! " << std::endl;
-        return ;
+        return -1;
     }
+    return 0 ;
 }
 
 void ElmoECAT::SetProfilePositionPdoRegs(uint16_t  pos)
@@ -334,7 +335,7 @@ void ElmoECAT::WaitForOPmode()
         CheckMasterDomainState();
         CheckSlaveConfigurationState();
         */
-        clock_gettime(CLOCK_TO_USE, &syncTimer);
+        clock_gettime(CLOCK_MONOTONIC, &syncTimer);
         ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
         ecrt_master_sync_slave_clocks(master);
         ecrt_master_application_time(master, TIMESPEC2NS(syncTimer));
