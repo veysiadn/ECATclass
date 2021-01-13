@@ -165,7 +165,7 @@ void ElmoECAT::WriteSDO(ec_sdo_request_t *req, uint32_t data)
 
 void ElmoECAT::SetOperationMode(uint8_t om)
 {
-    if( !(ecrt_slave_config_sdo8(slaveConfig,od_operationMode, om) ) )
+    if( ecrt_slave_config_sdo8(slaveConfig,od_operationMode, om) )
         std::cout << "Set operation mode config error ! " << std::endl;
 }
 

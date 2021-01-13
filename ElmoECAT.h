@@ -178,14 +178,14 @@ public:
     uint32_t cycleTime;
     uint32_t sync0_shift;
 
-    const static ec_pdo_entry_reg_t profilePosition_PdoRegs[] = {
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_velocityActvalue,  offset.actual_vel},
-        {alias_, position_, vendorId_,productCode_,od_currentActualValue, offset.actual_cur},
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos}
-        {alias_, position_, vendorId_,productCode_,od_positionActualVal, offset.actual_pos},
-    }
+    ec_pdo_entry_reg_t profilePosition_PdoRegs[6] = {
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_,od_velocityActvalue,   &offset.actual_vel},
+        {alias_, position_, vendorId_,productCode_,od_currentActualValue, &offset.actual_cur},
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_,od_positionActualVal,  &offset.actual_pos},
+    };
     /*******************************************************************************/
     //RxPdo
     /*static ec_pdo_entry_info_t motor_rxpdo_entries[8] =
