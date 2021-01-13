@@ -306,9 +306,9 @@ public:
     void WriteSDO(ec_sdo_request_t *req, uint32_t data);
     void SetOperationMode(uint8_t om);
     
-    void CheckSlaveConfigurationState();
+    /*void CheckSlaveConfigurationState();
     int  CheckMasterState();
-    void CheckMasterDomainState();
+    void CheckMasterDomainState();*/
     void WaitForOPmode();
     int  GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr);
     int  SetProfilePositionParameters( ProfilePosParam& P );

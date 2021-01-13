@@ -256,7 +256,7 @@ int ElmoECAT::ActivateMaster()
         return -1;
     }
 }
-
+/*
 void ElmoECAT::CheckSlaveConfigurationState()
 {
     ec_slave_config_state_t s;
@@ -322,7 +322,7 @@ void ElmoECAT::CheckMasterDomainState()
     }
     masterDomainState = ds;
 }
-
+*/
 void ElmoECAT::WaitForOPmode()
 {
     while (slaves_up != NUM_OF_SLAVES){
@@ -330,10 +330,10 @@ void ElmoECAT::WaitForOPmode()
         ecrt_domain_process(masterDomain);
         usleep(500);
 
-        CheckMasterState();
+       /* CheckMasterState();
         CheckMasterDomainState();
         CheckSlaveConfigurationState();
-
+        */
         clock_gettime(CLOCK_TO_USE, &syncTimer);
         ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
         ecrt_master_sync_slave_clocks(master);
