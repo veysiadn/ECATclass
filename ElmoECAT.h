@@ -31,10 +31,10 @@
 
 /****************************************************************************/
 // the user-space real-time interface library.
-
-#include "ecrt.h"                               // IgH EtherCAT library header file, includes all EtherCAT related functions and data types.
-
-#include "objectdictionary.h"                   // Object dictionary paramaters PDO index and default values in here.
+// IgH EtherCAT library header file, includes all EtherCAT related functions and data types.
+#include "ecrt.h"                     
+// Object dictionary paramaters PDO index and default values in here.
+#include "objectdictionary.h"         
 /****************************************************************************/
 static ec_master_t           *master = NULL ;
 static ec_master_state_t      masterState = {};
@@ -185,8 +185,8 @@ public:
     offset_t            offset ;
     data_t              data ;
     uint8_t             *slavePdoDomain ;
-    uint32_t cycleTime;
-    uint32_t sync0_shift;
+    uint32_t cycleTime ;
+    uint32_t sync0_shift ;
 
     ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 

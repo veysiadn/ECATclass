@@ -39,7 +39,7 @@ int main()
     if ( !(e_motor.SetProfilePositionParameters(PositionParameters) ) )
         std::cout << "Profile Position Parameter Settings Succesfull.." << std::endl; 
 
-    if(!(e_motor.ActivateMaster()   ))
+    if (!(e_motor.ActivateMaster() ))
         std::cout << "MasterActivation complete.." << std::endl;  
     e_motor.WaitForOPmode();
     return 0;
