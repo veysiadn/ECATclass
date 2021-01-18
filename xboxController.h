@@ -53,7 +53,7 @@ typedef struct {
 	int stk_LeftX; 		/* left stick */
 	int stk_LeftY; 		/* left stick */
 	int stk_RightX; 	/* right stick */
-	int stk_RightY;
+	int stk_RightY;		
 	int stk_crossFB; 	/* cross front/back */
 	int stk_crossLR; 	/* cross left/right */
 	int stk_LeftTop; 	/* left top stick */

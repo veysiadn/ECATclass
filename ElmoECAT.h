@@ -34,14 +34,15 @@
 // IgH EtherCAT library header file, includes all EtherCAT related functions and data types.
 #include "ecrt.h"                     
 // Object dictionary paramaters PDO index and default values in here.
-#include "objectdictionary.h"         
+#include "objectdictionary.h"     
+#include "xboxController.h"    
 /****************************************************************************/
 static ec_master_t           *master = NULL ;
 static ec_master_state_t      masterState = {};
 static ec_domain_t           *masterDomain = NULL; 
 static ec_domain_state_t      masterDomainState = {};  
 static char                   slaves_up = 0 ;
-static struct timespec               syncTimer ;
+static struct timespec        syncTimer ;
 /****************************************************************************/
 #define TEST_BIT(NUM,N)     (NUM && (1 << N))
 #define TEST_BIT(NUM,N)     (NUM && (1 << N))
@@ -181,14 +182,20 @@ public:
     static const uint32_t productCode_ = 0x00030924 ;
 
     ec_slave_config_t       *slaveConfig ;
-    ec_slave_config_state_t slaveConfigState ;
-    offset_t            offset ;
-    data_t              data ;
-    uint8_t             *slavePdoDomain ;
-    uint32_t cycleTime ;
-    uint32_t sync0_shift ;
-    pthread_t motorThread;
-    static pthread_t XboxControllerThread;
+    ec_slave_config_state_t  slaveConfigState ;
+
+    offset_t                 offset ;
+    data_t                   data ;
+
+    uint8_t                 *slavePdoDomain ;
+
+    uint32_t                 cycleTime ;
+    uint32_t                 sync0_shift ;
+
+    pthread_t                motorThread;
+    pthread_t                XboxControllerThread;
+    XboxController           Controller;
+
     ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 
         {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &offset.actual_pos},
@@ -287,9 +294,11 @@ public:
     void CheckMasterDomainState();
     void WaitForOPmode();
     void StartRealTimeTasks();
-    void* ReadXboxValues(void *arg);
-    void* MotorCyclicTask(void *arg);
-
+    void *ReadXboxValues(void *arg);
+    static void* HelperReadXboxValues(void *context);
+    static void* HelperMotorCyclicTask(void *context);
+    void *MotorCyclicTask(void *arg);
+    int  GetDefaultPositionParameters(ProfilePosParam& P);
     int  GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr);
     int  SetProfilePositionParameters( ProfilePosParam& P );
     int  SetProfileVelocityParameters(ProfileVelocityParam& P);

@@ -185,6 +185,16 @@ void ElmoECAT::SetOperationMode(uint8_t om)
         std::cout << "Set operation mode config error ! " << std::endl;
 }
 
+int ElmoECAT::GetDefaultPositionParameters(ProfilePosParam&P)
+{
+    P.maxProfileVelocity    = 1e5 ;
+    P.profileAcceleration   = 1e6 ;
+    P.profileDeceleration   = 1e6 ;
+    P.profileVelocity       = 8e4 ;
+    P.quickStopDeceleration = 1e6 ;
+    P.maxFollowingError     = 1e6 ; 
+    return 1;
+}
 
 int ElmoECAT::SetProfilePositionParameters( ProfilePosParam& P ) 
 {
@@ -338,24 +348,66 @@ void ElmoECAT::CheckMasterDomainState()
 
 void ElmoECAT::WaitForOPmode()
 {
-    while (slaves_up != NUM_OF_SLAVES){
-        ecrt_master_receive(master);
-        ecrt_domain_process(masterDomain);
-        usleep(500);
+    int tryCount=0;
+    while (slaves_up != NUM_OF_SLAVES ){
+        if(tryCount < 1e4){
+            ecrt_master_receive(master);
+            ecrt_domain_process(masterDomain);
+            usleep(500);
 
-        CheckMasterState();
-        CheckMasterDomainState();
-        CheckSlaveConfigurationState();
-        
-        clock_gettime(CLOCK_MONOTONIC, &syncTimer);
-        ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
-        ecrt_master_sync_slave_clocks(master);
-        ecrt_master_application_time(master, TIMESPEC2NS(syncTimer));
+            CheckMasterState();
+            CheckMasterDomainState();
+            CheckSlaveConfigurationState();
+            
+            clock_gettime(CLOCK_MONOTONIC, &syncTimer);
+            ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
+            ecrt_master_sync_slave_clocks(master);
+            ecrt_master_application_time(master, TIMESPEC2NS(syncTimer));
 
-        ecrt_domain_queue(masterDomain);                
-        ecrt_master_send(master);
-        usleep(500);
+            ecrt_domain_queue(masterDomain);                
+            ecrt_master_send(master);
+            usleep(500);
+            tryCount++;
+        }else {
+            std::cout << "Error : Timeout occurred while waiting for OP mode.! " << std::endl;
+            return ;
+        }
     }
+}
+
+void* ElmoECAT::HelperReadXboxValues(void *context)
+{
+    return ((ElmoECAT *)context)->ReadXboxValues(NULL);
+}
+
+void* ElmoECAT::HelperMotorCyclicTask(void *context)
+{
+    return ((ElmoECAT *)context)->MotorCyclicTask(NULL);
+}
+
+void* ElmoECAT::ReadXboxValues(void *arg)
+{
+    
+if (Controller.initXboxController(XBOX_DEVICE) >= 0) {
+    Controller.xbox = Controller.getXboxDataStruct();
+    Controller.readXboxControllerInformation(Controller.xbox);
+
+    printf("xbox controller detected\n\naxis:\t\t%d\nbuttons:\t%d\nidentifier:\t%s\n",
+            Controller.xbox->numOfAxis, Controller.xbox->numOfButtons, Controller.xbox->identifier);
+
+    while (1) {
+        Controller.readXboxData(Controller.xbox);
+        Controller.printXboxCtrlValues(Controller.xbox);
+        usleep(1e3);
+    }
+
+    Controller.deinitXboxController(Controller.xbox);
+}
+}
+
+void* ElmoECAT::MotorCyclicTask(void *arg)
+{
+    
 }
 
 void ElmoECAT::StartRealTimeTasks()
@@ -368,7 +420,7 @@ void ElmoECAT::StartRealTimeTasks()
     pthread_attr_setschedparam(&tattr, &sparam);
     pthread_attr_setinheritsched (&tattr, PTHREAD_EXPLICIT_SCHED);
     
-    if(pthread_create(&thread, &tattr, &MotorCyclicTask, NULL) ) {
+    if(pthread_create(&this->motorThread, &tattr, &HelperMotorCyclicTask, NULL) ) {
       printf("# ERROR: could not create MotorCylicTask thread\n");
       return ;
     }
@@ -381,34 +433,10 @@ void ElmoECAT::StartRealTimeTasks()
     pthread_attr_setschedparam(&attr, &param);
     pthread_attr_setinheritsched (&attr, PTHREAD_EXPLICIT_SCHED);
     
-    if( pthread_create(&thread, &attr, &ReadXboxValues, NULL) ) {
+    if( pthread_create(&this->XboxControllerThread, &attr, &HelperReadXboxValues, NULL) ) {
       printf("# ERROR: could not create realtime XboxController thread\n");
       return ;
     }
-}
-
-void* ElmoECAT::ReadXboxValues(void *arg)
-{
-    
-if (Controller.initXboxController(XBOX_DEVICE) >= 0) {
-    Contoller.xbox = Controller.getXboxDataStruct();
-    Controller.readXboxControllerInformation(Contoller.xbox);
-
-    printf("xbox controller detected\n\naxis:\t\t%d\nbuttons:\t%d\nidentifier:\t%s\n",
-            Contoller.xbox->numOfAxis, Contoller.xbox->numOfButtons, Contoller.xbox->identifier);
-
-    while (1) {
-        Controller.readXboxData(Contoller.xbox);
-        Controller.printXboxCtrlValues(Contoller.xbox);
-        usleep(1e3);
-    }
-
-    Controller.deinitXboxController(Contoller.xbox);
-}
-}
-
-void* ElmoECAT::MotorCyclicTask(void *arg)
-{
 
 }
 

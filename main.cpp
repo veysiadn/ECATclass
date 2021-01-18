@@ -6,7 +6,7 @@ int main()
 {
     ElmoECAT e_motor;
     e_motor.cycleTime    = PERIODNS;
-    e_motor.sync0_shift  = 1e3;
+    e_motor.sync0_shift  = 0;
     std::cout << "Initialization started.." << std::endl;
     
    if (mlockall(MCL_CURRENT | MCL_FUTURE) == -1) {
@@ -26,15 +26,9 @@ int main()
     e_motor.ConfigDCSync();
     std::cout << "DC Sync method configured.." << std::endl;
     ProfilePosParam PositionParameters; 
-    sdoRequest_t e_sdo;
-   // e_motor.ConfigSDORequests(e_sdo);
-    //e_motor.GetProfilePositionParameters(PositionParameters,e_sdo);
-    PositionParameters.maxProfileVelocity    = 1e5 ;
-    PositionParameters.profileAcceleration   = 1e6 ;
-    PositionParameters.profileDeceleration   = 1e6 ;
-    PositionParameters.profileVelocity       = 8e4 ;
-    PositionParameters.quickStopDeceleration = 1e6 ;
-    PositionParameters.maxFollowingError     = 1e6 ; 
+    // sdoRequest_t e_sdo;
+    e_motor.GetDefaultPositionParameters(PositionParameters);
+
     e_motor.SetOperationMode(MODE_PROFILE_POSITION);
     if ( !(e_motor.SetProfilePositionParameters(PositionParameters) ) )
         std::cout << "Profile Position Parameter Settings Succesfull.." << std::endl; 
@@ -42,5 +36,6 @@ int main()
     if (!(e_motor.ActivateMaster() ))
         std::cout << "MasterActivation complete.." << std::endl;  
     e_motor.WaitForOPmode();
+    
     return 0;
 }
