@@ -346,7 +346,7 @@ void ElmoECAT::CheckMasterDomainState()
     masterDomainState = ds;
 }
 
-void ElmoECAT::WaitForOPmode()
+int ElmoECAT::WaitForOPmode()
 {
     int tryCount=0;
     while (slaves_up != NUM_OF_SLAVES ){
@@ -370,9 +370,10 @@ void ElmoECAT::WaitForOPmode()
             tryCount++;
         }else {
             std::cout << "Error : Timeout occurred while waiting for OP mode.! " << std::endl;
-            return ;
+            return -1;
         }
     }
+    return 0;
 }
 
 void* ElmoECAT::HelperReadXboxValues(void *context)
@@ -398,7 +399,6 @@ if (Controller.initXboxController(XBOX_DEVICE) >= 0) {
     while (1) {
         Controller.readXboxData(Controller.xbox);
         Controller.printXboxCtrlValues(Controller.xbox);
-        usleep(1e3);
     }
 
     Controller.deinitXboxController(Controller.xbox);
@@ -407,7 +407,219 @@ if (Controller.initXboxController(XBOX_DEVICE) >= 0) {
 
 void* ElmoECAT::MotorCyclicTask(void *arg)
 {
-    
+    struct timespec wakeupTime, time ;
+    static unsigned int sync_ref_counter = 0 ;
+    unsigned int counter = 0 ;
+    unsigned int debugSpeed = 1e3 ;
+    const struct timespec cycletime = {0, this->cycleTime};
+    unsigned int command = 0x004F;
+#if MEASURE_TIMING
+    int begin=5;
+    struct timespec startTime={}, endTime={}, lastStartTime = {};
+    uint32_t period_ns = 0, exec_ns = 0, latency_ns = 0,
+    latency_min_ns = 0, latency_max_ns = 0,
+    period_min_ns = 0, period_max_ns = 0,
+    exec_min_ns = 0, exec_max_ns = 0,
+    max_period=0, max_latency=0,
+    max_exec=0, min_latency=0xffffffff,
+    min_period=0xffffffff, min_exec=0xffffffff;                    
+#endif
+
+    // get current time
+clock_gettime(CLOCK_TO_USE, &wakeupTime);
+
+while(1){
+            
+    wakeupTime = timespec_add(wakeupTime, cycletime);
+    clock_nanosleep(CLOCK_TO_USE, TIMER_ABSTIME, &wakeupTime, NULL);
+    ecrt_master_application_time(master, TIMESPEC2NS(wakeupTime));
+
+    #if MEASURE_TIMING
+        clock_gettime(CLOCK_TO_USE, &startTime);
+        latency_ns = DIFF_NS(wakeupTime, startTime);
+        period_ns  = DIFF_NS(lastStartTime, startTime);
+        exec_ns    = DIFF_NS(lastStartTime, endTime);
+        lastStartTime = startTime;  
+        if(!begin){
+            if(latency_ns > max_latency)        max_latency = latency_ns;
+            if(period_ns > max_period)          max_period  = period_ns;
+            if(exec_ns > max_exec)              max_exec    = exec_ns;
+            if(latency_ns < min_latency)        min_latency = latency_ns;
+            if(period_ns < min_period )         min_period  = period_ns;
+            if(exec_ns < min_exec)              min_exec    = exec_ns;
+        }
+
+        if (latency_ns > latency_max_ns)  {
+            latency_max_ns = latency_ns;
+        }
+        if (latency_ns < latency_min_ns) {
+            latency_min_ns = latency_ns;
+        }
+        if (period_ns > period_max_ns) {
+            period_max_ns = period_ns;
+        }
+        if (period_ns < period_min_ns) {
+            period_min_ns = period_ns;
+        }
+        if (exec_ns > exec_max_ns) {
+            exec_max_ns = exec_ns;
+        }
+        if (exec_ns < exec_min_ns) {
+            exec_min_ns = exec_ns;
+        }
+    #endif
+
+     // receive process data
+    ecrt_master_receive(master);
+    ecrt_domain_process(masterDomain);
+
+
+
+    if (counter) 
+    {
+        counter--;
+    } 
+    else{ 
+        counter = debugSpeed;
+        // check for master state (optional)
+        if(!check_master_state()) {
+            printf("Error occured slave state error ; lost connection, master state error\n");
+            return NULL;
+        }
+
+        if (!check_slave_config_states()){
+            printf("Error occured slave state error ; lost connection, slave config error \n");
+            return NULL;
+        }
+  
+        #if MEASURE_TIMING
+                // output timing stats
+                printf("-----------------------------------------------\n");
+                printf("Tperiod   min   : %10u ns  | max : %10u ns\n",
+                        period_min_ns, period_max_ns);
+                printf("Texec     min   : %10u ns  | max : %10u ns\n",
+                        exec_min_ns, exec_max_ns);
+                printf("Tlatency  min   : %10u ns  | max : %10u ns\n",
+                        latency_min_ns, latency_max_ns);
+                printf("Tjitter max     : %10u ns  \n",
+                        latency_max_ns-latency_min_ns);
+
+                printf("Tperiod min     : %10u ns  | max : %10u ns\n",
+                        period_min_ns, max_period);
+                 printf("Texec  min      : %10u ns  | max : %10u ns\n",
+                        exec_min_ns, max_exec);               
+                 printf("Tjitter min     : %10u ns  | max : %10u ns\n",
+                          latency_max_ns-latency_min_ns, max_latency-min_latency);
+                
+                printf("-----------------------------------------------\n");
+                period_max_ns = 0;
+                period_min_ns = 0xffffffff;
+                exec_max_ns = 0;
+                exec_min_ns = 0xffffffff;
+                latency_max_ns = 0;
+                latency_min_ns = 0xffffffff;
+        #endif
+
+        printf("Status value    : 0x%x \n", this->data.status_word);
+        printf("Position value  : %d \n",   this->data.actual_pos);
+        printf("Target position : %d \n",   this->data.target_pos);
+        printf("\n\n");
+           
+    }
+
+    if(slaves_up == NUM_OF_SLAVES){
+        // calculate new process data
+        this->data.actual_pos   = EC_READ_U32(slavePdoDomain+this->offset.actual_pos);
+        this->data.status_word  = EC_READ_U16(slavePdoDomain+this->offset.status_word);
+    }
+    // Apply state machine ;   
+
+
+     //DS402 CANOpen over EtherCAT state machine
+            if ( (this->data.status_word & command) == 0x0040  ){  // If status is "Switch on disabled", \
+                                                    change state to "Ready to switch on"
+                this->data.control_word  = od_goreadyToSwitchOn;
+                command = 0x006f;
+                this->c_motorState = SWITCHED_ON_DISABLED;
+                printf("Transiting to -Ready to switch on state...- \n");
+
+            } else if ( (this->data.status_word & command) == 0x0021){ // If status is "Ready to switch on", \
+                                                            change state to "Switched on"
+                this->data.control_word  = od_goSwitchOn;     
+                command = 0x006f;
+                this->c_motorState = READY_TO_SWITCH_ON;
+                printf("Transiting to -Switched on state...- \n");        
+
+            } else if ( (this->data.status_word & command) == 0x0023){         // If status is "Switched on", change state to "Operation enabled"
+
+               // printf("Operation enabled...\n");
+                this->data.control_word  = od_goEnable;
+                command = 0x006f;
+                this->c_motorState = SWITCHED_ON;
+
+            } else if ( (this->data.status_word & command) == 0x0027){        // Operation position mode ; set new-position;
+                this->data.control_word = od_run;
+                this->c_motorState = OPERATION_ENABLED;
+                if(TEST_BIT(status,11)){
+                    command=0x0023;
+                    this->c_motorState = TARGET_REACHED;
+                }
+            } else if ((this->data.status_word & 0x4f) == 0X08){              //if status is fault, reset fault state.
+
+                command = 0X04f;
+                printf("ERROR : Motor fault state ... \n"
+                            "Resetting Motor state\n");
+                this->data.control_word = 0XFFFF;
+                this->c_motorState = FAULT;
+
+            }
+
+    this->data.target_pos = this->Controller.xbox->stk_LeftX ; 
+            // write process data
+    EC_WRITE_U16(slavePdoDomain + this->offset.control_word, this->data.control_word);
+    EC_WRITE_S32(slavePdoDomain + this->offset.control_word, this->data.target_pos);
+
+//-----------------------------------------------------------------------------------------------------------------
+//  Distributed Clock sync functions and parameters.
+    if (sync_ref_counter) {
+        sync_ref_counter--;
+    } else {
+        sync_ref_counter = 1; // sync every cycle
+        clock_gettime(CLOCK_TO_USE, &time);
+        ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(time));
+    }
+    ecrt_master_sync_slave_clocks(master);
+//------------------------------------------------------------------------------------------------------------------    
+    // send process data ; 
+    ecrt_domain_queue(masterDomain);                
+    ecrt_master_send(master);
+
+    /**
+     * Note ; 
+     *      // receive process data
+     *      ecrt_master_receive(master);
+     *      ecrt_domain_process(masterDomain);
+     *      -------------------------------------------------------------------------
+     *      Any application should do whatever data processing is necessary in between the receive and send sections.
+     *      You can read specific data from received frame by using ; 
+     * 
+     *      EC_READ_XXX(domain+offsetVariable)          to see example usage you can check code above.
+     *      
+     *      after calculating new process data with received data now you can write with function;
+     *      
+     *      EC_WRITE_XX(domain+offsetVariable,data);     to see example usage you can check code above.       
+     *      -------------------------------------------------------------------------
+     *      //Send process data
+     *      ecrt_domain_queue(masterDomain);                
+     *      ecrt_master_send(master);
+     */
+//------------------------------------------------------------------------------------
+    #if     MEASURE_TIMING
+            clock_gettime(CLOCK_TO_USE, &endTime);
+            if(begin) begin--;
+    #endif
+ }
+    return NULL;
 }
 
 void ElmoECAT::StartRealTimeTasks()

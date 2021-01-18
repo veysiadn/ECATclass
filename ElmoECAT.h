@@ -50,6 +50,7 @@ static struct timespec        syncTimer ;
 #define RESET_BIT(NUM,N)    (NUM & ~(1 << N))
 #define NUM_OF_SLAVES   1
 #define TIMESPEC2NS(T) ((uint64_t) (T).tv_sec * 1e9 + (T).tv_nsec)
+#define CLOCK_TO_USE        CLOCK_MONOTONIC
 //VeysiAdn operationModes
 typedef enum
 {
@@ -64,20 +65,19 @@ typedef enum
 } opmode_t ;
 
 //VeysiAdn motor states
-enum
-{
-    STATE_INIT  = 0,
-    STATE_ENABLING = 1,
-    STATE_ENABLED = 2,
-    STATE_MOVING  = 3,
-    STATE_TARGET_REACHED = 4,
-    STATE_FAULT = 5,
-
-    STATE_CSP = 8,
-    STATE_CSV = 9,
-    STATE_CST = 10,
-
-}motor_state{STATE_INIT};
+enum motorStates{
+	READY_TO_SWITCH_ON = 1,
+	SWITCHED_ON,
+	OPERATION_ENABLED,
+	FAULT,
+	VOLTAGE_ENABLED,
+	QUICK_STOP,
+	SWITCHED_ON_DISABLED,
+	WARNING,
+	REMOTE,
+	TARGET_REACHED,
+	INTERNAL_LIMIT_ACTIVATE
+};
 
 //VeysiAdn offset for pdo entries
 typedef struct
@@ -183,7 +183,7 @@ public:
 
     ec_slave_config_t       *slaveConfig ;
     ec_slave_config_state_t  slaveConfigState ;
-
+    
     offset_t                 offset ;
     data_t                   data ;
 
@@ -191,35 +191,35 @@ public:
 
     uint32_t                 cycleTime ;
     uint32_t                 sync0_shift ;
-
+    int32_t                  c_motorState ;
     pthread_t                motorThread;
     pthread_t                XboxControllerThread;
     XboxController           Controller;
-
+    
     ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 
-        {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &offset.actual_pos},
-        {alias_, position_, vendorId_,productCode_, od_positonFollowingError ,    &offset.posFollowingError},
-        {alias_, position_, vendorId_,productCode_, od_torqueActualValue ,        &offset.actual_tor},
-        {alias_, position_, vendorId_,productCode_, od_statusWord ,               &offset.status_word},
-        {alias_, position_, vendorId_,productCode_, od_operationModeDisplay ,     &offset.mode_display},
-        {alias_, position_, vendorId_,productCode_, od_velocityActvalue ,         &offset.actual_vel},
-        {alias_, position_, vendorId_,productCode_, od_currentActualValue ,       &offset.actual_cur},
-        {alias_, position_, vendorId_,productCode_, od_dcCircuitLinkVoltage ,     &offset.dcCircuitLinkVoltage},
-        {alias_, position_, vendorId_,productCode_, od_errorCode ,                &offset.errorCode},
-        {alias_, position_, vendorId_,productCode_, od_extraStatusRegister ,      &offset.extraStatusReg},
+        {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &this->offset.actual_pos},
+        {alias_, position_, vendorId_,productCode_, od_positonFollowingError ,    &this->offset.posFollowingError},
+        {alias_, position_, vendorId_,productCode_, od_torqueActualValue ,        &this->offset.actual_tor},
+        {alias_, position_, vendorId_,productCode_, od_statusWord ,               &this->offset.status_word},
+        {alias_, position_, vendorId_,productCode_, od_operationModeDisplay ,     &this->offset.mode_display},
+        {alias_, position_, vendorId_,productCode_, od_velocityActvalue ,         &this->offset.actual_vel},
+        {alias_, position_, vendorId_,productCode_, od_currentActualValue ,       &this->offset.actual_cur},
+        {alias_, position_, vendorId_,productCode_, od_dcCircuitLinkVoltage ,     &this->offset.dcCircuitLinkVoltage},
+        {alias_, position_, vendorId_,productCode_, od_errorCode ,                &this->offset.errorCode},
+        {alias_, position_, vendorId_,productCode_, od_extraStatusRegister ,      &this->offset.extraStatusReg},
 
         // Output PDO Mapping ; 
-        {alias_, position_, vendorId_,productCode_,od_targetPosition,            &offset.target_pos},
-        {alias_, position_, vendorId_,productCode_,od_targetVelocity ,           &offset.target_vel},
-        {alias_, position_, vendorId_,productCode_,od_targetTorque,              &offset.target_tor},
-        {alias_, position_, vendorId_,productCode_,od_torqueMax ,                &offset.max_tor},
-        {alias_, position_, vendorId_,productCode_,od_controlWord ,              &offset.control_word},
-        {alias_, position_, vendorId_,productCode_,od_operationMode ,            &offset.mode},
-        {alias_, position_, vendorId_,productCode_,od_profileVelocity ,          &offset.profileVel},
-        {alias_, position_, vendorId_,productCode_,od_profileAcceleration ,      &offset.profileAcc},
-        {alias_, position_, vendorId_,productCode_,od_profileDeceleration ,      &offset.profileDec},
-        {alias_, position_, vendorId_,productCode_,od_quickStopDeceleration ,    &offset.quicStopDec},
+        {alias_, position_, vendorId_,productCode_,od_targetPosition,            &this->offset.target_pos},
+        {alias_, position_, vendorId_,productCode_,od_targetVelocity ,           &this->offset.target_vel},
+        {alias_, position_, vendorId_,productCode_,od_targetTorque,              &this->offset.target_tor},
+        {alias_, position_, vendorId_,productCode_,od_torqueMax ,                &this->offset.max_tor},
+        {alias_, position_, vendorId_,productCode_,od_controlWord ,              &this->offset.control_word},
+        {alias_, position_, vendorId_,productCode_,od_operationMode ,            &this->offset.mode},
+        {alias_, position_, vendorId_,productCode_,od_profileVelocity ,          &this->offset.profileVel},
+        {alias_, position_, vendorId_,productCode_,od_profileAcceleration ,      &this->offset.profileAcc},
+        {alias_, position_, vendorId_,productCode_,od_profileDeceleration ,      &this->offset.profileDec},
+        {alias_, position_, vendorId_,productCode_,od_quickStopDeceleration ,    &this->offset.quicStopDec},
         {}
     };
     /*******************************************************************************/
@@ -292,7 +292,7 @@ public:
     void CheckSlaveConfigurationState();
     int  CheckMasterState();
     void CheckMasterDomainState();
-    void WaitForOPmode();
+    int  WaitForOPmode();
     void StartRealTimeTasks();
     void *ReadXboxValues(void *arg);
     static void* HelperReadXboxValues(void *context);
