@@ -172,16 +172,19 @@ void ElmoECAT::WriteSDO(ec_sdo_request_t *req, uint32_t data)
 	}
 }
 
+int ElmoECAT::GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr)
+{
+    ReadSDO(sr.s_ProfileAcceleration, P.profileAcceleration);
+}
+
+
+
 void ElmoECAT::SetOperationMode(uint8_t om)
 {
     if( ecrt_slave_config_sdo8(slaveConfig,od_operationMode, om) )
         std::cout << "Set operation mode config error ! " << std::endl;
 }
 
-int ElmoECAT::GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr)
-{
-    ReadSDO(sr.s_ProfileAcceleration, P.profileAcceleration);
-}
 
 int ElmoECAT::SetProfilePositionParameters( ProfilePosParam& P ) 
 {
@@ -355,6 +358,53 @@ void ElmoECAT::WaitForOPmode()
     }
 }
 
+void StartRealTimeTasks()
+{
+    pthread_attr_t tattr;
+    struct sched_param sparam;
+    sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+    pthread_attr_init(&tattr);
+    pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
+    pthread_attr_setschedparam(&tattr, &sparam);
+    pthread_attr_setinheritsched (&tattr, PTHREAD_EXPLICIT_SCHED);
+    
+    if(pthread_create(&thread, &tattr, &MotorCyclicTask, NULL) ) {
+      printf("# ERROR: could not create MotorCylicTask thread\n");
+      return ;
+    }
+
+    pthread_attr_t attr;
+    struct sched_param param;
+    param.sched_priority = sched_get_priority_max(SCHED_FIFO);
+    pthread_attr_init(&attr);
+    pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+    pthread_attr_setschedparam(&attr, &param);
+    pthread_attr_setinheritsched (&attr, PTHREAD_EXPLICIT_SCHED);
+    
+    if( pthread_create(&thread, &attr, &ReadXboxValues, NULL) ) {
+      printf("# ERROR: could not create realtime XboxController thread\n");
+      return ;
+    }
+}
+
+void* ReadXboxValues(void *arg)
+{
+    if (initXboxContoller(XBOX_DEVICE) >= 0) {
+        xboxCtrl* xbox = getXboxDataStruct();
+        readXboxControllerInformation(xbox);
+
+        printf("xbox controller detected\n\naxis:\t\t%d\nbuttons:\t%d\nidentifier:\t%s\n",
+                xbox->numOfAxis, xbox->numOfButtons, xbox->identifier);
+
+        while (1) {
+            readXboxData(xbox);
+            printXboxCtrlValues(xbox);
+        }
+
+        deinitXboxController(xbox);
+    }
+	return ;
+}
 void ElmoECAT::ResetMaster()
 {
     ecrt_master_reset(master);

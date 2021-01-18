@@ -187,7 +187,8 @@ public:
     uint8_t             *slavePdoDomain ;
     uint32_t cycleTime ;
     uint32_t sync0_shift ;
-
+    pthread_t motorThread;
+    static pthread_t XboxControllerThread;
     ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
         // Input PDO mapping ; 
         {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &offset.actual_pos},
@@ -285,6 +286,10 @@ public:
     int  CheckMasterState();
     void CheckMasterDomainState();
     void WaitForOPmode();
+    void StartRealTimeTasks();
+    void* ReadXboxValues(void *arg);
+    void* MotorCyclicTask(void *arg);
+
     int  GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr);
     int  SetProfilePositionParameters( ProfilePosParam& P );
     int  SetProfileVelocityParameters(ProfileVelocityParam& P);
