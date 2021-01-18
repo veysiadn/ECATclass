@@ -11,7 +11,7 @@ void XboxController::deinitXboxController(xboxCtrl* xbox){
 	close(fd);
 }
 
-int XboxController::initXboxContoller(char* dev){
+int XboxController::initXboxController(char* dev){
 	if(fd == -1){
 		if ((fd = open(dev, O_RDONLY)) < 0) {
 			printf("device %s could not opened.\n", dev);

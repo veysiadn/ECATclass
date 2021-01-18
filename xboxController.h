@@ -5,13 +5,14 @@
 #ifndef XBOXCONTROLLER_H_
 #define XBOXCONTROLLER_H_
 
+#include <string>
 #include <stdlib.h>
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <linux/joystick.h>
+#include<iostream>
 
-#define XBOX_DEVICE 			"/dev/input/js1"
 #define IDENTIFIER_SIZE			64
 
 #define STICK_LEFT_X_ID			0x00
@@ -36,6 +37,8 @@
 #define BTN_TOP_LEFT_ID			0x04
 #define BTN_TOP_RIGHT_ID		0x05
 
+static std::string s = "/dev/input/js1";
+static char* XBOX_DEVICE = const_cast<char*>(s.c_str());
 
 typedef struct {
 	int numOfAxis;
@@ -67,12 +70,12 @@ public:
 	char joysickIdentifier[IDENTIFIER_SIZE];
 	int fd = -1;
 	xboxCtrl* xbox = NULL;
-	int initXboxContoller(char* dev);
+	int initXboxController(char* dev);
 	void deinitXboxController(xboxCtrl* xbox);
 	xboxCtrl* getXboxDataStruct(void);
 	void readXboxControllerInformation(xboxCtrl* xbox);
 	void readXboxData(xboxCtrl* xbox);
 	void setXboxCtrlValue(xboxCtrl* xbox, struct js_event* js);
 	void printXboxCtrlValues(xboxCtrl* xbox);
-}
+};
 #endif /* XBOXCONTROLLER_H_ */
