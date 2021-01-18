@@ -358,7 +358,7 @@ void ElmoECAT::WaitForOPmode()
     }
 }
 
-void StartRealTimeTasks()
+void ElmoECAT::StartRealTimeTasks()
 {
     pthread_attr_t tattr;
     struct sched_param sparam;
@@ -387,24 +387,31 @@ void StartRealTimeTasks()
     }
 }
 
-void* ReadXboxValues(void *arg)
+void* ElmoECAT::ReadXboxValues(void *arg)
 {
-    if (initXboxContoller(XBOX_DEVICE) >= 0) {
-        xboxCtrl* xbox = getXboxDataStruct();
-        readXboxControllerInformation(xbox);
+    
+if (Controller.initXboxController(XBOX_DEVICE) >= 0) {
+    Contoller.xbox = Controller.getXboxDataStruct();
+    Controller.readXboxControllerInformation(Contoller.xbox);
 
-        printf("xbox controller detected\n\naxis:\t\t%d\nbuttons:\t%d\nidentifier:\t%s\n",
-                xbox->numOfAxis, xbox->numOfButtons, xbox->identifier);
+    printf("xbox controller detected\n\naxis:\t\t%d\nbuttons:\t%d\nidentifier:\t%s\n",
+            Contoller.xbox->numOfAxis, Contoller.xbox->numOfButtons, Contoller.xbox->identifier);
 
-        while (1) {
-            readXboxData(xbox);
-            printXboxCtrlValues(xbox);
-        }
-
-        deinitXboxController(xbox);
+    while (1) {
+        Controller.readXboxData(Contoller.xbox);
+        Controller.printXboxCtrlValues(Contoller.xbox);
+        usleep(1e3);
     }
-	return ;
+
+    Controller.deinitXboxController(Contoller.xbox);
 }
+}
+
+void* ElmoECAT::MotorCyclicTask(void *arg)
+{
+
+}
+
 void ElmoECAT::ResetMaster()
 {
     ecrt_master_reset(master);

@@ -1,5 +1,11 @@
 /*
- *
+ *	Xbox Controller code has been downloaded from  ; 
+ *	https://github.com/msch26/scholtyssek-blogspot/tree/master/xboxControllerClient/src
+ *  as a C code, this code has been modified to C++ code, and class implementation
+ *  added by 
+ *  VeysiADN
+ *  01/18/2020 
+ *  veysi.adin@kist.re.kr
  */
 
 #ifndef XBOXCONTROLLER_H_
