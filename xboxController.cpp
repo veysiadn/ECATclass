@@ -1,5 +1,5 @@
 /*
- * xboxController.c
+ * xboxController.cpp
  *
  */
 #include "xboxController.h"

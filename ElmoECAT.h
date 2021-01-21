@@ -44,8 +44,7 @@ static ec_domain_state_t      masterDomainState = {};
 static char                   slaves_up = 0 ;
 static struct timespec        syncTimer ;
 /****************************************************************************/
-#define TEST_BIT(NUM,N)     (NUM && (1 << N))
-#define TEST_BIT(NUM,N)     (NUM && (1 << N))
+#define TEST_BIT(NUM,N)     (NUM & (1 << N))
 #define SET_BIT(NUM,N)      (NUM |  (1 << N))
 #define RESET_BIT(NUM,N)    (NUM & ~(1 << N))
 #define NUM_OF_SLAVES   1
@@ -210,9 +209,10 @@ public:
     int32_t                  c_motorState ;
     pthread_t                motorThread;
     pthread_t                XboxControllerThread;
-    XboxController           Controller;
+
+    static XboxController           Controller;
     
-    ec_pdo_entry_reg_t masterDomain_PdoRegs[21] = {
+    ec_pdo_entry_reg_t masterDomain_PdoRegs[7] = {
         // Input PDO mapping ; 
         {alias_, position_, vendorId_,productCode_, od_positionActualVal ,        &this->offset.actual_pos},
         {alias_, position_, vendorId_,productCode_, od_statusWord ,               &this->offset.status_word},
@@ -271,29 +271,31 @@ public:
     */
 
 
-    {0x607a, 0x00, 32},
-    {0x60fe, 0x01, 32},
-    {0x6040, 0x00, 16},
+    {od_targetPosition, 32},
+    {od_digitalOutputs, 32},
+    {od_controlWord, 16},
     {od_targetVelocity,32},
-    {0x6064, 0x00, 32},
-    {0x60fd, 0x00, 32},
-    {0x6041, 0x00, 16},
+    {od_positionActualVal, 32},
+    {od_digitalInputs, 32},
+    {od_statusWord, 16},
     {od_velocityActvalue,32}
 };
 
     ec_pdo_info_t GS_PDO_Indexes[4] = {
-      /*  {0x1605, 7, GS_PDO_Entries + 0},   //16XX From master to slave outputs e.g Target Position RxPDO
+        //16XX From master to slave outputs e.g Target Position RxPDO
+      /*{0x1605, 7, GS_PDO_Entries + 0},   
         {0x1611, 1, GS_PDO_Entries + 7}, 
         {0x1613, 1, GS_PDO_Entries + 8},
         {0x1614, 1, GS_PDO_Entries + 9},
         {0x161f, 1, GS_PDO_Entries + 10},
 
-        {0x1a04, 6, GS_PDO_Entries + 11},   //1AXX From slave to the master inputs e.g Actual Position TxPDO
+        //1AXX From slave to the master inputs e.g Actual Position TxPDO
+        {0x1a04, 6, GS_PDO_Entries + 11},   
         {0x1a0f, 1, GS_PDO_Entries + 17},
         {0x1a18, 1, GS_PDO_Entries + 18},
         {0x1a1f, 1, GS_PDO_Entries + 19},
         {0x1a21, 1, GS_PDO_Entries + 20},
-        {0x1a26, 1, GS_PDO_Entries + 21},*/
+        {0x1a26, 1, GS_PDO_Entries + 21}, */
         {0x1600, 3, GS_PDO_Entries + 0},
         {0x1607, 1, GS_PDO_Entries + 3},
     

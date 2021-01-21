@@ -1,5 +1,9 @@
 #include "ElmoECAT.h"
 
+// Static member imitialization ;
+
+XboxController ElmoECAT::Controller = {} ; 
+
 ElmoECAT::ElmoECAT()
 {
 
@@ -14,10 +18,10 @@ ElmoECAT::~ElmoECAT()
 
 /* Note function calling order is
     ElmoECAT e_motor;     // Create instance of class 
-    e_motor.cycleTime    = PERIODNS;        assign your period in nanoseconds 
-    e_motor.sync0_shift  = 1e3;             assign your sync shift 
-    e_motor.position_ = 0 ;                 assign your motors position in term of physical
-                                            connection the your master.
+    e_motor.cycleTime    = PERIODNS;           assign your period in nanoseconds 
+    e_motor.sync0_shift  = 1e3;                assign your sync shift 
+    e_motor.position_    = 0 ;                 assign your motors position in term of physical
+                                                connection the your master.
     call ConfigureMaster() function 
     call ConfigureSlave() function
 
@@ -272,7 +276,7 @@ int ElmoECAT::ActivateMaster()
         std::cout << " Master activation error ! " << std::endl;
         return -1;
     }
-    if(!(slavePdoDomain = ecrt_domain_data(masterDomain)))
+    if(!(this->slavePdoDomain = ecrt_domain_data(masterDomain)))
     {
         std::cout << "Domain PDO registration error ... " << std::endl;
         return -1;

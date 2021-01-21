@@ -29,6 +29,9 @@
 #define od_velocityEncoderResolutionNum       0x6094,0x01
 #define od_velocityEncoderResolutionDen       0x6094,0x02
 
+#define od_digitalInputs			  0x60fd, 0x00
+#define od_digitalOutputs 			  0x60fe,0x01
+
 #define od_dcCircuitLinkVoltage	  	  0x6079,0x00
 #define od_targetTorque               0x6071,0x00 
 #define od_torqueMax                  0x6072,0x00
