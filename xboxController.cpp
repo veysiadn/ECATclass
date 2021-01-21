@@ -24,6 +24,7 @@ int XboxController::initXboxController(char* dev){
 
 xboxCtrl* XboxController::getXboxDataStruct(){
 	if(xbox == NULL){
+		printf("Allocationg memory for Xbox\n");
 		xbox = (xboxCtrl*) malloc(sizeof(xboxCtrl));
 	}
 	return xbox;

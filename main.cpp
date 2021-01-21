@@ -5,9 +5,9 @@
 int main()
 {
     ElmoECAT e_motor;
-    e_motor.cycleTime    = PERIODNS;
-    e_motor.sync0_shift  = 0;
-    e_motor.position_ = 0 ;
+    e_motor.cycleTime    = PERIODNS ;
+    e_motor.sync0_shift  = 0 ;
+    e_motor.position_    = 0 ;
 
     std::cout << "Initialization started.." << std::endl;
     
@@ -33,15 +33,22 @@ int main()
     }
     e_motor.ConfigDCSync();
     std::cout << "DC Sync method configured.." << std::endl;
-    ProfilePosParam PositionParameters; 
+    ProfileVelocityParam VelocityParam; 
     // sdoRequest_t e_sdo;
-    e_motor.GetDefaultPositionParameters(PositionParameters);
 
-    e_motor.SetOperationMode(MODE_PROFILE_POSITION);
-    if ( e_motor.SetProfilePositionParameters(PositionParameters)  ){
+    VelocityParam.MaxProfileVelocity = 1e5 ;
+    VelocityParam.MotionProfileType  = 0 ; 
+    VelocityParam.ProfileAccel       = 1e6 ;
+    VelocityParam.ProfileDecel       = 1e6 ;
+    VelocityParam.QuickStopDecel     = 1e6 ; 
+    //e_motor.GetDefaultPositionParameters(PositionParameters);
+
+    e_motor.SetOperationMode(MODE_PROFILE_VELOCITY);
+    e_motor.SetProfileVelocityParameters(VelocityParam);
+    /*if ( e_motor.SetProfilePositionParameters(PositionParameters)  ){
         std::cout << "Profile Position Parameter set error.." << std::endl; 
         return -1 ;
-    }
+    }*/
     if (e_motor.ActivateMaster()){
         std::cout << "Master Activation error.." << std::endl;  
         return -1 ;
@@ -50,7 +57,9 @@ int main()
         std::cout << "Error while waiting for OP mode..." << std::endl;
         return -1;
     }
-    e_motor.StartRealTimeTasks();
-    
+    std::cout << "Motor in OP Mode " << std::endl ; 
+    e_motor.StartRealTimeTasks(e_motor);
+        std::cout << " Realtime task started ... " << std::endl ;
+    e_motor.KeepInOPmode();
     return 0;
 }

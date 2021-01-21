@@ -14,7 +14,7 @@
 #define od_positonCounts		 0x6063,0x00
 #define od_maxFollowingError     0x6065,0x00
 
-#define od_velocityActvalue       0x6069,0x00
+#define od_velocityActvalue       0x606c,0x00
 #define od_velocityAddress        0x6069,0x00
 #define od_targetVelocity         0x60FF,0x00
 #define	od_velocityOffset		  0x60b1, 0x00

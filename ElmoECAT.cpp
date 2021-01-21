@@ -41,8 +41,8 @@ int ElmoECAT::ConfigureMaster()
     this information can be obtained via writing " $ ethercat cstruct " to command line.
 int ElmoECAT::ConfigureSlave(uint16_t pos)
 {
-    slaveConfig = ecrt_master_slave_config(master,alias_,pos,vendorId_,productCode_);
-    if(!slaveConfig) {
+    this->slaveConfig = ecrt_master_slave_config(master,alias_,pos,vendorId_,productCode_);
+    if(!this->slaveConfig) {
         std::cout << "Failed to  configure slave ! " << std::endl;
         return -1;
     }
@@ -56,7 +56,7 @@ void ElmoECAT::SetProfilePositionPdoRegs(uint16_t  pos)
 
 int ElmoECAT::MapPDOs(ec_sync_info_t *syncs, ec_pdo_entry_reg_t *pdo_entry_reg)
 {
-    int err = ecrt_slave_config_pdos(slaveConfig,EC_END,syncs);
+    int err = ecrt_slave_config_pdos(this->slaveConfig,EC_END,syncs);
     if ( err ) {
         std::cout <<  "Failed to configure  PDOs! " << std::endl ;
         return -1;
@@ -71,59 +71,59 @@ int ElmoECAT::MapPDOs(ec_sync_info_t *syncs, ec_pdo_entry_reg_t *pdo_entry_reg)
 
 void ElmoECAT::ConfigDCSync()
 {
-    return ecrt_slave_config_dc(slaveConfig, 0x0300, cycleTime, sync0_shift, 0, 0);
+    return ecrt_slave_config_dc(this->slaveConfig, 0x0300, cycleTime, sync0_shift, 0, 0);
 }
 
 int ElmoECAT::ConfigSDORequests(sdoRequest_t& e_sdo)
 {    
     if (!(e_sdo.s_maxFollowingError = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_maxFollowingError, 4))) {
+                    (this->slaveConfig, od_maxFollowingError, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_maxFollowingError, 500); // ms
 
     if (!(e_sdo.s_MaxProfileVelocity = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_maxProfileVelocity, 4))) {
+                    (this->slaveConfig, od_maxProfileVelocity, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_MaxProfileVelocity, 500); // ms
 
     if (!(e_sdo.s_MotionProfileType = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_motionProfileType, 2))) {
+                    (this->slaveConfig, od_motionProfileType, 2))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_MotionProfileType, 500); // ms      
 
     if (!(e_sdo.s_ProfileAcceleration = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_profileAcceleration, 4))) {
+                    (this->slaveConfig, od_profileAcceleration, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_ProfileAcceleration, 500); // ms
 
     if (!(e_sdo.s_ProfileDeceleration = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_profileDeceleration, 4))) {
+                    (this->slaveConfig, od_profileDeceleration, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_ProfileDeceleration, 500); // ms
     if (!(e_sdo.s_maxFollowingError = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_profileDeceleration, 4))) {
+                    (this->slaveConfig, od_profileDeceleration, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_ProfileVelocity, 500); // ms
     if (!(e_sdo.s_maxFollowingError = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_profileVelocity, 4))) {
+                    (this->slaveConfig, od_profileVelocity, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
     ecrt_sdo_request_timeout(e_sdo.s_ProfileVelocity, 500); // ms
     if (!(e_sdo.s_QuickStopDeceleration = ecrt_slave_config_create_sdo_request
-                    (slaveConfig, od_quickStopDeceleration, 4))) {
+                    (this->slaveConfig, od_quickStopDeceleration, 4))) {
         fprintf(stderr, "Failed to create SDO request.\n");
         return -1;
     }
@@ -181,7 +181,7 @@ int ElmoECAT::GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr
 
 void ElmoECAT::SetOperationMode(uint8_t om)
 {
-    if( ecrt_slave_config_sdo8(slaveConfig,od_operationMode, om) )
+    if( ecrt_slave_config_sdo8(this->slaveConfig,od_operationMode, om) )
         std::cout << "Set operation mode config error ! " << std::endl;
 }
 
@@ -200,32 +200,32 @@ int ElmoECAT::SetProfilePositionParameters( ProfilePosParam& P )
 {
     // Returns 0 if succesfull, otherwise < 0 
     //profile velocity
-    if(ecrt_slave_config_sdo32(slaveConfig,od_profileVelocity, P.profileVelocity) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_profileVelocity, P.profileVelocity) < 0) {
         std::cout << "Set profile velocity config error ! " << std::endl;
         return -1;
     }
     //max profile velocity
-    if(ecrt_slave_config_sdo32(slaveConfig,od_maxProfileVelocity,P.maxProfileVelocity) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_maxProfileVelocity,P.maxProfileVelocity) < 0) {
         std::cout << "Set max profile  velocity config error ! " << std::endl;
         return -1;
     }
     //profile acceleration
-    if(ecrt_slave_config_sdo32(slaveConfig,od_profileAcceleration, P.profileAcceleration) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_profileAcceleration, P.profileAcceleration) < 0) {
         std::cout << "Set profile acceleration failed ! " << std::endl;
         return -1;
     }
     //profile deceleration
-    if(ecrt_slave_config_sdo32(slaveConfig,od_profileDeceleration,P.profileDeceleration) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_profileDeceleration,P.profileDeceleration) < 0) {
         std::cout << "Set profile deceleration failed ! " << std::endl;
         return -1;
     }
     // quick stop deceleration 
-    if(ecrt_slave_config_sdo32(slaveConfig,od_quickStopDeceleration,P.quickStopDeceleration) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_quickStopDeceleration,P.quickStopDeceleration) < 0) {
         std::cout << "Set profile deceleration failed ! " << std::endl;
         return -1;
     }
     // max following error 
-    if(ecrt_slave_config_sdo16(slaveConfig,od_maxFollowingError,P.maxFollowingError) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_maxFollowingError,P.maxFollowingError) < 0) {
         std::cout << "Set profile deceleration failed ! " << std::endl;
         return -1;
     }   
@@ -236,27 +236,27 @@ int ElmoECAT::SetProfileVelocityParameters(ProfileVelocityParam& P)
 {
     // Returns 0 if succesfull, otherwise < 0 
     // motionProfileType
-    if(ecrt_slave_config_sdo16(slaveConfig,od_motionProfileType, P.MotionProfileType) < 0) {
+    if(ecrt_slave_config_sdo16(this->slaveConfig,od_motionProfileType, P.MotionProfileType) < 0) {
         std::cout << "Set profile velocity config error ! " << std::endl;
         return -1;
     }
     //max profile velocity
-    if(ecrt_slave_config_sdo32(slaveConfig,od_maxProfileVelocity,P.MaxProfileVelocity) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_maxProfileVelocity,P.MaxProfileVelocity) < 0) {
         std::cout << "Set max profile  velocity config error ! " << std::endl;
         return -1;
     }
     //profile acceleration
-    if(ecrt_slave_config_sdo32(slaveConfig,od_profileAcceleration, P.ProfileDecel) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_profileAcceleration, P.ProfileDecel) < 0) {
         std::cout << "Set profile acceleration failed ! " << std::endl;
         return -1;
     }
     //profile deceleration
-    if(ecrt_slave_config_sdo32(slaveConfig,od_profileDeceleration,P.ProfileAccel) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_profileDeceleration,P.ProfileAccel) < 0) {
         std::cout << "Set profile deceleration failed ! " << std::endl;
         return -1;
     }
     // quick stop deceleration 
-    if(ecrt_slave_config_sdo32(slaveConfig,od_quickStopDeceleration,P.QuickStopDecel) < 0) {
+    if(ecrt_slave_config_sdo32(this->slaveConfig,od_quickStopDeceleration,P.QuickStopDecel) < 0) {
         std::cout << "Set profile deceleration failed ! " << std::endl;
         return -1;
     }
@@ -283,7 +283,7 @@ int ElmoECAT::ActivateMaster()
 void ElmoECAT::CheckSlaveConfigurationState()
 {
     ec_slave_config_state_t s;
-    ecrt_slave_config_state(slaveConfig, &s);
+    ecrt_slave_config_state(this->slaveConfig, &s);
 
     if (slaves_up < NUM_OF_SLAVES && s.al_state != 0x08) {
         printf("Gold Solo Slave  : State 0x%02X.\n", s.al_state);
@@ -292,17 +292,17 @@ void ElmoECAT::CheckSlaveConfigurationState()
           printf("Gold Solo Slave : State 0x%02X.\n", s.al_state);
         slaves_up = NUM_OF_SLAVES;
     }
-    if (s.al_state != slaveConfigState.al_state) {
+    if (s.al_state != this->slaveConfigState.al_state) {
         printf("AnaIn: State 0x%02X.\n", s.al_state);
     }
-    if (s.online != slaveConfigState.online) {
+    if (s.online != this->slaveConfigState.online) {
         printf("AnaIn: %s.\n", s.online ? "online" : "offline");
     }
-    if (s.operational != slaveConfigState.operational) {
+    if (s.operational != this->slaveConfigState.operational) {
         printf("AnaIn: %soperational.\n", s.operational ? "" : "Not ");
     }
     
-     slaveConfigState = s;
+     this->slaveConfigState = s;
 }
 
 int ElmoECAT::CheckMasterState()
@@ -314,7 +314,7 @@ int ElmoECAT::CheckMasterState()
         printf("%u slave(s).\n", ms.slaves_responding);
 
         if (ms.slaves_responding < 1) {
-            printf("Connection error, only %d slaves responding",ms.slaves_responding);
+            printf("Connection error, only %d slaves responding\n",ms.slaves_responding);
             return 0;
         }
     }
@@ -345,20 +345,46 @@ void ElmoECAT::CheckMasterDomainState()
     }
     masterDomainState = ds;
 }
+int ElmoECAT::KeepInOPmode(){
+    int printSpeed = 0;
+    while ( 1 ){
+    
+        ecrt_master_receive(master);
+        ecrt_domain_process(masterDomain);
+        usleep(500);
+        if(!printSpeed){
+            this->CheckMasterState();
+            this->CheckMasterDomainState();
+            this->CheckSlaveConfigurationState();
+            printSpeed = 1e3 ;
+        }
+        clock_gettime(CLOCK_MONOTONIC, &syncTimer);
+        ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
+        ecrt_master_sync_slave_clocks(master);
+        ecrt_master_application_time(master, TIMESPEC2NS(syncTimer));
+
+        ecrt_domain_queue(masterDomain);                
+        ecrt_master_send(master);
+        usleep(500);
+        printSpeed-- ;
+    }
+}
 
 int ElmoECAT::WaitForOPmode()
 {
     int tryCount=0;
+    int printSpeedSet=0;
     while (slaves_up != NUM_OF_SLAVES ){
         if(tryCount < 1e4){
             ecrt_master_receive(master);
             ecrt_domain_process(masterDomain);
             usleep(500);
-
-            CheckMasterState();
-            CheckMasterDomainState();
-            CheckSlaveConfigurationState();
-            
+            if(!printSpeedSet){
+                this->CheckMasterState();
+                this->CheckMasterDomainState();
+                this->CheckSlaveConfigurationState();
+                printSpeedSet = 1e3 ;
+            }
             clock_gettime(CLOCK_MONOTONIC, &syncTimer);
             ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
             ecrt_master_sync_slave_clocks(master);
@@ -367,7 +393,9 @@ int ElmoECAT::WaitForOPmode()
             ecrt_domain_queue(masterDomain);                
             ecrt_master_send(master);
             usleep(500);
+
             tryCount++;
+            printSpeedSet--;
         }else {
             std::cout << "Error : Timeout occurred while waiting for OP mode.! " << std::endl;
             return -1;
@@ -389,19 +417,20 @@ void* ElmoECAT::HelperMotorCyclicTask(void *context)
 void* ElmoECAT::ReadXboxValues(void *arg)
 {
     
-if (Controller.initXboxController(XBOX_DEVICE) >= 0) {
-    Controller.xbox = Controller.getXboxDataStruct();
-    Controller.readXboxControllerInformation(Controller.xbox);
+if (this->Controller.initXboxController(XBOX_DEVICE) >= 0) {
+    this->Controller.xbox = this->Controller.getXboxDataStruct();
+    this->Controller.readXboxControllerInformation(this->Controller.xbox);
 
     printf("xbox controller detected\n\naxis:\t\t%d\nbuttons:\t%d\nidentifier:\t%s\n",
-            Controller.xbox->numOfAxis, Controller.xbox->numOfButtons, Controller.xbox->identifier);
+            this->Controller.xbox->numOfAxis, this->Controller.xbox->numOfButtons, this->Controller.xbox->identifier);
 
     while (1) {
-        Controller.readXboxData(Controller.xbox);
-        Controller.printXboxCtrlValues(Controller.xbox);
+        this->Controller.readXboxData(this->Controller.xbox);
+        //this->Controller.printXboxCtrlValues(this->Controller.xbox);
+        usleep(1e3);
     }
 
-    Controller.deinitXboxController(Controller.xbox);
+    this->Controller.deinitXboxController(this->Controller.xbox);
 }
 }
 
@@ -482,16 +511,13 @@ while(1){
     else{ 
         counter = debugSpeed;
         // check for master state (optional)
-        if(!check_master_state()) {
+        if(!this->CheckMasterState()) {
             printf("Error occured slave state error ; lost connection, master state error\n");
             return NULL;
         }
 
-        if (!check_slave_config_states()){
-            printf("Error occured slave state error ; lost connection, slave config error \n");
-            return NULL;
-        }
-  
+        this->CheckSlaveConfigurationState();
+
         #if MEASURE_TIMING
                 // output timing stats
                 printf("-----------------------------------------------\n");
@@ -521,16 +547,16 @@ while(1){
         #endif
 
         printf("Status value    : 0x%x \n", this->data.status_word);
-        printf("Position value  : %d \n",   this->data.actual_pos);
-        printf("Target position : %d \n",   this->data.target_pos);
+        printf("Velocity value  : %d \n",   this->data.actual_vel);
+        printf("Target velocity : %d \n",   this->data.target_vel);
         printf("\n\n");
            
     }
 
     if(slaves_up == NUM_OF_SLAVES){
         // calculate new process data
-        this->data.actual_pos   = EC_READ_U32(slavePdoDomain+this->offset.actual_pos);
-        this->data.status_word  = EC_READ_U16(slavePdoDomain+this->offset.status_word);
+        this->data.actual_vel   = EC_READ_U32(slavePdoDomain + this->offset.actual_vel);
+        this->data.status_word  = EC_READ_U16(slavePdoDomain + this->offset.status_word);
     }
     // Apply state machine ;   
 
@@ -560,7 +586,7 @@ while(1){
             } else if ( (this->data.status_word & command) == 0x0027){        // Operation position mode ; set new-position;
                 this->data.control_word = od_run;
                 this->c_motorState = OPERATION_ENABLED;
-                if(TEST_BIT(status,11)){
+                if(TEST_BIT(data.status_word ,11)){
                     command=0x0023;
                     this->c_motorState = TARGET_REACHED;
                 }
@@ -569,15 +595,18 @@ while(1){
                 command = 0X04f;
                 printf("ERROR : Motor fault state ... \n"
                             "Resetting Motor state\n");
-                this->data.control_word = 0XFFFF;
+                this->data.control_word = 0x0080;
                 this->c_motorState = FAULT;
 
             }
-
-    this->data.target_pos = this->Controller.xbox->stk_LeftX ; 
+    if(Controller.xbox->stk_LeftX > 3500 || Controller.xbox->stk_LeftX < -3500 )
+        data.target_vel  = Controller.xbox->stk_LeftX * 3;
+    else 
+        data.target_vel  = 0 ;
+    //this->data.target_pos = this->Controller.xbox->stk_LeftX ; 
             // write process data
-    EC_WRITE_U16(slavePdoDomain + this->offset.control_word, this->data.control_word);
-    EC_WRITE_S32(slavePdoDomain + this->offset.control_word, this->data.target_pos);
+    EC_WRITE_U16(this->slavePdoDomain + this->offset.control_word, this->data.control_word);
+    EC_WRITE_S32(this->slavePdoDomain + this->offset.target_vel, this->data.target_vel);
 
 //-----------------------------------------------------------------------------------------------------------------
 //  Distributed Clock sync functions and parameters.
@@ -622,34 +651,73 @@ while(1){
     return NULL;
 }
 
-void ElmoECAT::StartRealTimeTasks()
+int ElmoECAT::StartRealTimeTasks(ElmoECAT c)
 {
-    pthread_attr_t tattr;
-    struct sched_param sparam;
-    sparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
-    pthread_attr_init(&tattr);
-    pthread_attr_setschedpolicy(&tattr, SCHED_FIFO);
-    pthread_attr_setschedparam(&tattr, &sparam);
-    pthread_attr_setinheritsched (&tattr, PTHREAD_EXPLICIT_SCHED);
+    pthread_attr_t xattr;
+    struct sched_param xparam;
+    xparam.sched_priority = 50 ;
+    pthread_attr_init(&xattr);
+    pthread_attr_setschedpolicy(&xattr, SCHED_FIFO);
+    pthread_attr_setschedparam(&xattr, &xparam);
+    pthread_attr_setinheritsched (&xattr, PTHREAD_EXPLICIT_SCHED);
     
-    if(pthread_create(&this->motorThread, &tattr, &HelperMotorCyclicTask, NULL) ) {
-      printf("# ERROR: could not create MotorCylicTask thread\n");
-      return ;
-    }
-
-    pthread_attr_t attr;
-    struct sched_param param;
-    param.sched_priority = sched_get_priority_max(SCHED_FIFO);
-    pthread_attr_init(&attr);
-    pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
-    pthread_attr_setschedparam(&attr, &param);
-    pthread_attr_setinheritsched (&attr, PTHREAD_EXPLICIT_SCHED);
-    
-    if( pthread_create(&this->XboxControllerThread, &attr, &HelperReadXboxValues, NULL) ) {
+    if( pthread_create(&this->XboxControllerThread, &xattr, &this->HelperReadXboxValues, &c) ) {
       printf("# ERROR: could not create realtime XboxController thread\n");
-      return ;
+      usleep(1e3);
+      return -1 ;
     }
 
+
+    struct sched_param param = {};
+    pthread_t cyclicThread;
+    pthread_attr_t attr;
+    int err;
+    
+    printf("\nStarting cyclic function.\n");
+    param.sched_priority = 98;
+    //param.sched_priority = 80;
+    printf("Using priority %i\n.", param.sched_priority);
+
+    if (sched_setscheduler(0, SCHED_FIFO, &param) == -1)
+        perror("sched_setscheduler failed\n");
+    
+    err = pthread_attr_init(&attr);
+    if (err) {
+        printf("init pthread attributes failed\n");
+        return -1;
+    }
+
+    /* Set a specific stack size  */
+    err = pthread_attr_setstacksize(&attr, 1e9);
+    if (err) {
+        printf("pthread setstacksize failed\n");
+        return -1 ;
+    }
+
+    /* Set scheduler policy and priority of pthread */
+    err = pthread_attr_setschedpolicy(&attr, SCHED_FIFO);
+    if (err) {
+        printf("pthread setschedpolicy failed\n");
+        return -1 ;
+    }
+    err = pthread_attr_setschedparam(&attr, &param);
+    if (err) {
+            printf("pthread setschedparam failed\n");
+            return -1 ;
+    }
+    /* Use scheduling parameters of attr */
+    err = pthread_attr_setinheritsched(&attr, PTHREAD_EXPLICIT_SCHED);
+    if (err) 
+    {
+        printf("pthread setinheritsched failed\n");
+        return -1 ;
+    }
+    if(pthread_create(&this->motorThread, &attr, &this->HelperMotorCyclicTask, &c) ) {
+      printf("# ERROR: could not create MotorCylicTask thread\n");
+      usleep(1e3);
+      return -1;
+    }
+    pthread_join(this->motorThread, NULL);
 }
 
 void ElmoECAT::ResetMaster()
