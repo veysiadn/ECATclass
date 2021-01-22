@@ -3,10 +3,18 @@
 // Static member imitialization ;
 
 XboxController ElmoECAT::Controller = {} ; 
+int ElmoECAT::positionCount = 0 ;
 
 ElmoECAT::ElmoECAT()
 {
-
+    this->cycleTime     = PERIODNS ; 
+    this->sync0_shift   = 0 ; 
+    this->position_     =  positionCount ; 
+    positionCount++;
+    ConfigureMaster();
+    this->ConfigureSlave(this->position_);
+    this->MapPDOs(e_motor.GS_Syncs,e_motor.masterDomain_PdoRegs);
+    this->ConfigDCSync();
 }
 
 ElmoECAT::~ElmoECAT()
@@ -183,21 +191,32 @@ int ElmoECAT::GetProfilePositionParameters (ProfilePosParam& P, sdoRequest_t& sr
 
 
 
-void ElmoECAT::SetOperationMode(uint8_t om)
+int ElmoECAT::SetOperationMode(uint8_t om)
 {
-    if( ecrt_slave_config_sdo8(this->slaveConfig,od_operationMode, om) )
+    if( ecrt_slave_config_sdo8(this->slaveConfig,od_operationMode, om) ){
         std::cout << "Set operation mode config error ! " << std::endl;
+        return -1 ;
+    }
+    return 0 ; 
+}
+ 
+void ElmoECAT::GetDefaultPositionParameters()
+{
+    this->PositionParam.maxProfileVelocity    = 1e5 ;
+    this->PositionParam.profileAcceleration   = 1e6 ;
+    this->PositionParam.profileDeceleration   = 1e6 ;
+    this->PositionParam.profileVelocity       = 8e4 ;
+    this->PositionParam.quickStopDeceleration = 1e6 ;
+    this->PositionParam.maxFollowingError     = 1e6 ; 
 }
 
-int ElmoECAT::GetDefaultPositionParameters(ProfilePosParam&P)
+void ElmoECAT::GetDefaultVelocityParameters()
 {
-    P.maxProfileVelocity    = 1e5 ;
-    P.profileAcceleration   = 1e6 ;
-    P.profileDeceleration   = 1e6 ;
-    P.profileVelocity       = 8e4 ;
-    P.quickStopDeceleration = 1e6 ;
-    P.maxFollowingError     = 1e6 ; 
-    return 1;
+    this->VelocityParam.MaxProfileVelocity = 1e5 ;
+    this->VelocityParam.MotionProfileType  = 0 ; 
+    this->VelocityParam.ProfileAccel       = 1e6 ;
+    this->VelocityParam.ProfileDecel       = 1e6 ;
+    this->VelocityParam.QuickStopDecel     = 1e6 ; 
 }
 
 int ElmoECAT::SetProfilePositionParameters( ProfilePosParam& P ) 
@@ -236,6 +255,19 @@ int ElmoECAT::SetProfilePositionParameters( ProfilePosParam& P )
     return 0;
 }
 
+int ElmoECAT::PrepareForProfilePositionMode()
+{
+    this->GetDefaultPositionParameters();
+
+    if( this->SetOperationMode(MODE_PROFILE_POSITION) ) 
+        return -1 ;
+
+    if ( this->SetProfilePositionParameters(this->PositionParam) )
+        return -1 ;
+    
+    return 0;
+}
+
 int ElmoECAT::SetProfileVelocityParameters(ProfileVelocityParam& P)
 {
     // Returns 0 if succesfull, otherwise < 0 
@@ -267,6 +299,18 @@ int ElmoECAT::SetProfileVelocityParameters(ProfileVelocityParam& P)
     return 0 ; 
 }
 
+int ElmoECAT::PrepareForProfileVelocityMode()
+{
+    this->GetDefaultVelocityParameters();
+
+    if( this->SetOperationMode(MODE_PROFILE_VELOCITY) )
+        return -1 ;
+
+    if ( this->SetProfileVelocityParameters(this->VelocityParam) )
+        return -1 ;
+    
+    return 0;
+}
 
 int ElmoECAT::ActivateMaster()
 {
@@ -274,8 +318,13 @@ int ElmoECAT::ActivateMaster()
     activating master means now you're ready for realtime PDO data exchange
     if ( ecrt_master_activate(master) ) {
         std::cout << " Master activation error ! " << std::endl;
-        return -1;
+        return -1 ;
     }
+    return 0 ; 
+}
+
+int ElmoECAT::RegisterDomain()
+{
     if(!(this->slavePdoDomain = ecrt_domain_data(masterDomain)))
     {
         std::cout << "Domain PDO registration error ... " << std::endl;
@@ -357,8 +406,8 @@ int ElmoECAT::KeepInOPmode(){
         ecrt_domain_process(masterDomain);
         usleep(500);
         if(!printSpeed){
-            this->CheckMasterState();
-            this->CheckMasterDomainState();
+            CheckMasterState();
+            CheckMasterDomainState();
             this->CheckSlaveConfigurationState();
             printSpeed = 1e3 ;
         }
@@ -384,8 +433,8 @@ int ElmoECAT::WaitForOPmode()
             ecrt_domain_process(masterDomain);
             usleep(500);
             if(!printSpeedSet){
-                this->CheckMasterState();
-                this->CheckMasterDomainState();
+                CheckMasterState();
+                CheckMasterDomainState();
                 this->CheckSlaveConfigurationState();
                 printSpeedSet = 1e3 ;
             }
@@ -408,6 +457,59 @@ int ElmoECAT::WaitForOPmode()
     return 0;
 }
 
+void ElmoECAT::EnableDevice()
+{
+    uint16_t command = 0x0004f ; 
+    // Receive Frame and pass it to domain to for transfer between kernelspace and userspace.
+    ecrt_master_receive(master);
+    ecrt_domain_process(masterDomain);
+    usleep(500);
+
+    this->data.status_word = ( this->slavePdoDomain + this->offset.status_word) ;
+
+
+//DS402 CANOpen over EtherCAT state machine
+    if ( (this->data.status_word & command) == 0x0040  ){  // If status is "Switch on disabled", \
+                                                          change state to "Ready to switch on"
+        this->data.control_word  = od_goreadyToSwitchOn;
+        command = 0x006f;
+        this->c_motorState = SWITCHED_ON_DISABLED;
+        printf("Transiting to -Ready to switch on state...- \n");
+
+    } else if ( (this->data.status_word & command) == 0x0021){ // If status is "Ready to switch on", \
+                                                    change state to "Switched on"
+        this->data.control_word  = od_goSwitchOn;     
+        command = 0x006f;
+        this->c_motorState = READY_TO_SWITCH_ON;
+        printf("Transiting to -Switched on state...- \n");        
+
+    } else if ( (this->data.status_word & command) == 0x0023){         // If status is "Switched on", change state to "Operation enabled"
+
+        // printf("Operation enabled...\n");
+        this->data.control_word  = od_goEnable;
+        command = 0x006f;
+        this->c_motorState = SWITCHED_ON;
+
+    }else if ((this->data.status_word & 0x4f) == 0X08){              //if status is fault, reset fault state.
+
+        command = 0X04f;
+        printf("ERROR : Motor fault state ... \n"
+                    "Resetting Motor state\n");
+        this->data.control_word = 0x0080;
+        this->c_motorState = FAULT;
+    }
+    EC_WRITE_U16(this->slavePdoDomain + this->offset.control_word,this->data.control_word);
+
+    clock_gettime(CLOCK_MONOTONIC, &syncTimer);
+    ecrt_master_sync_reference_clock_to(master, TIMESPEC2NS(syncTimer));
+    ecrt_master_sync_slave_clocks(master);
+    ecrt_master_application_time(master, TIMESPEC2NS(syncTimer));
+
+    ecrt_domain_queue(masterDomain);                
+    ecrt_master_send(master);
+    usleep(500);
+
+}
 void* ElmoECAT::HelperReadXboxValues(void *context)
 {
     return ((ElmoECAT *)context)->ReadXboxValues(NULL);
